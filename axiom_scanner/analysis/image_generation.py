@@ -4,6 +4,7 @@ import base64
 import json
 import mimetypes
 import os
+import re
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -20,10 +21,10 @@ def generate_meme_image(
     payload: dict[str, Any],
     resolve_og_image: Callable[[str, str], str],
 ) -> dict[str, Any]:
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if not api_key:
+    api_keys = get_openai_api_keys()
+    if not api_keys:
         raise ImageGenerationError(
-            "OPENAI_API_KEY is not set. Add it to your environment to generate images.",
+            "OPENAI_API_KEY or OPENAI_API_KEYS is not set. Add it to your environment to generate images.",
             code="missing_api_key",
             status=412,
         )
@@ -75,12 +76,25 @@ def generate_meme_image(
         ],
         "tool_choice": {"type": "image_generation"},
     }
-    response = _post_json(
-        "https://api.openai.com/v1/responses",
-        request_payload,
-        api_key=api_key,
-        timeout_seconds=int(os.getenv("OPENAI_IMAGE_TIMEOUT", "120")),
-    )
+    last_error: ImageGenerationError | None = None
+    for key_index, api_key in enumerate(api_keys, start=1):
+        try:
+            response = _post_json(
+                "https://api.openai.com/v1/responses",
+                request_payload,
+                api_key=api_key,
+                timeout_seconds=int(os.getenv("OPENAI_IMAGE_TIMEOUT", "120")),
+            )
+            break
+        except ImageGenerationError as exc:
+            last_error = exc
+            if not should_try_next_openai_key(exc) or key_index == len(api_keys):
+                raise
+    else:
+        if last_error:
+            raise last_error
+        raise ImageGenerationError("The image request failed.", "openai_error", 502)
+
     image_base64 = _extract_image_base64(response)
     if not image_base64:
         raise ImageGenerationError(
@@ -94,7 +108,52 @@ def generate_meme_image(
         "trend_image_url": trend_image_url,
         "og_image_url": og_image_url,
         "prompt": prompt,
+        "api_key_index": key_index,
     }
+
+
+def get_openai_api_keys() -> list[str]:
+    raw_keys = os.getenv("OPENAI_API_KEYS", "").strip()
+    if raw_keys:
+        keys = re.split(r"[\s,;]+", raw_keys)
+    else:
+        keys = [os.getenv("OPENAI_API_KEY", "").strip()]
+
+    seen: set[str] = set()
+    result: list[str] = []
+    for key in keys:
+        clean_key = key.strip()
+        if clean_key and clean_key not in seen:
+            result.append(clean_key)
+            seen.add(clean_key)
+    return result
+
+
+def should_try_next_openai_key(exc: ImageGenerationError) -> bool:
+    if exc.code not in {"openai_error", "network_error"}:
+        return False
+
+    message = str(exc).lower()
+    retry_markers = {
+        "billing",
+        "credit",
+        "insufficient",
+        "payment",
+        "quota",
+        "rate",
+        "limit",
+        "unauthorized",
+        "forbidden",
+        "invalid api key",
+        "api key",
+        "temporarily",
+        "timeout",
+        "timed out",
+        "connection",
+    }
+    return exc.status in {401, 403, 408, 409, 429, 500, 502, 503, 504} or any(
+        marker in message for marker in retry_markers
+    )
 
 
 def _build_prompt(narrative: dict[str, Any], token: dict[str, Any], og: dict[str, Any]) -> str:

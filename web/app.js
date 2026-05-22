@@ -63,6 +63,26 @@ function shortAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-6)}`;
 }
 
+function tokenIdentityKeys(token) {
+  const address = String(token.address || token.token_address || "").trim().toLowerCase();
+  const symbol = String(token.token || token.symbol || "").trim().toLowerCase();
+  const name = String(token.name || "").trim().toLowerCase();
+  const keys = [];
+  if (address) keys.push(`address:${address}`);
+  if (symbol || name) keys.push(`label:${symbol}:${name}`);
+  return keys;
+}
+
+function uniqueTokens(tokens) {
+  const seen = new Set();
+  return (tokens || []).filter((token) => {
+    const keys = tokenIdentityKeys(token);
+    if (keys.length === 0 || keys.some((key) => seen.has(key))) return false;
+    keys.forEach((key) => seen.add(key));
+    return true;
+  });
+}
+
 function fallbackImageUrl(token) {
   const label = String(token.token || token.symbol || token.name || "?")
     .slice(0, 6)
@@ -149,7 +169,7 @@ function tokenCard(token) {
 }
 
 function renderGroupedTokens(tokens) {
-  const visibleTokens = tokens.filter((token) => String(token.chain || "").toLowerCase() === "solana");
+  const visibleTokens = uniqueTokens(tokens).filter((token) => String(token.chain || "").toLowerCase() === "solana");
   const signals = ["HOT", "WATCH", "POTENTIAL", "SPECULATIVE"];
   return signals
     .map((signal) => {
@@ -195,14 +215,10 @@ function narrativeCard(item, index) {
           <span>Remix: ${escapeHtml(item.og_token)}</span>
           <span>1h: ${percent(item.change_1h)}</span>
         </div>
-        <div class="generated-slot" hidden></div>
         <div class="narrative-actions">
           <a class="hybrid-studio-button" href="${escapeHtml(hybridUrl)}">
             Mixer studio
           </a>
-          <button class="generate-image-button" type="button" data-index="${index}">
-            Generate image
-          </button>
           <details>
             <summary>Generation brief</summary>
             <p class="prompt-text">${escapeHtml(item.image_prompt)}</p>
@@ -231,7 +247,7 @@ function hybridStudioUrl(item, trendToken, ogToken) {
   params.set("prompt", item.image_prompt || item.visual_brief || item.narrative || "");
   params.set("title", item.name || "");
   params.set("ticker", item.ticker ? `$${item.ticker}` : "");
-  return `/#studio?${params.toString()}`;
+  return `#studio?${params.toString()}`;
 }
 
 function renderNarratives(narratives) {
@@ -296,7 +312,7 @@ async function loadScan() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const payload = await response.json();
-    const tokens = (payload.tokens || []).filter(
+    const tokens = uniqueTokens(payload.tokens || []).filter(
       (token) => String(token.chain || "").toLowerCase() === "solana",
     );
     currentTokens = tokens;
@@ -325,24 +341,33 @@ async function loadScan() {
 }
 
 async function resolveOgImages(tokens) {
-  const queue = tokens.filter((token) => !token.image_url).slice(0, 75);
-  for (const token of queue) {
-    try {
-      const url = `/api/og-image?name=${encodeURIComponent(token.name || "")}&symbol=${encodeURIComponent(token.symbol || "")}`;
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) continue;
-      const payload = await response.json();
-      if (!payload.image_url) continue;
-      token.image_url = payload.image_url;
-      currentNarratives = currentNarratives.map((item) =>
-        item.og_name === token.name && item.og_token === token.symbol
-          ? { ...item, og_image_url: token.image_url }
-          : item,
-      );
+  const queue = uniqueTokens(tokens).filter((token) => !token.image_url).slice(0, 24);
+  const batchSize = 6;
+  for (let index = 0; index < queue.length; index += batchSize) {
+    const batch = queue.slice(index, index + batchSize);
+    const changed = await Promise.all(
+      batch.map(async (token) => {
+        try {
+          const url = `/api/og-image?name=${encodeURIComponent(token.name || "")}&symbol=${encodeURIComponent(token.symbol || "")}`;
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) return false;
+          const payload = await response.json();
+          if (!payload.image_url) return false;
+          token.image_url = payload.image_url;
+          currentNarratives = currentNarratives.map((item) =>
+            item.og_name === token.name && item.og_token === token.symbol
+              ? { ...item, og_image_url: token.image_url }
+              : item,
+          );
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }),
+    );
+    if (changed.some(Boolean)) {
       renderOgPreview(currentOgTokens);
       renderNarratives(currentNarratives);
-    } catch (error) {
-      // Missing OG art should not interrupt the mixer.
     }
   }
 }
@@ -372,43 +397,6 @@ async function generateNarrativesFromInput() {
   }
 }
 
-async function generateImage(index) {
-  const narrative = currentNarratives[index];
-  if (!narrative) return;
-  const card = narrativeGrid.querySelector(`[data-index="${index}"]`);
-  const button = card?.querySelector(".generate-image-button");
-  const slot = card?.querySelector(".generated-slot");
-  const token = currentTokens.find((item) => item.token === narrative.trend_token) || {};
-  const og = currentOgTokens.find(
-    (item) => item.name === narrative.og_name && item.symbol === narrative.og_token,
-  ) || { name: narrative.og_name, symbol: narrative.og_token, image_url: narrative.og_image_url };
-  if (!button || !slot) return;
-
-  button.disabled = true;
-  button.textContent = "Generating...";
-  slot.hidden = false;
-  slot.textContent = "Creating reference-based mix...";
-
-  try {
-    const response = await fetch("/api/generate-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ narrative, token, og }),
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-    slot.innerHTML = `<img class="generated-image" src="${escapeHtml(payload.image_data_url)}" alt="${escapeHtml(narrative.name)} generated meme" />`;
-    button.textContent = "Regenerate";
-    statusText.textContent = "Image ready";
-  } catch (error) {
-    slot.textContent = String(error.message || error);
-    button.textContent = "Generate image";
-    statusText.textContent = "Image generation needs attention";
-  } finally {
-    button.disabled = false;
-  }
-}
-
 function scheduleRefresh() {
   if (refreshTimer) window.clearInterval(refreshTimer);
   const seconds = Number(refreshInput.value || 0);
@@ -429,9 +417,13 @@ tokenGrid.addEventListener("click", async (event) => {
 });
 
 narrativeGrid.addEventListener("click", (event) => {
-  const button = event.target.closest(".generate-image-button");
-  if (!button) return;
-  generateImage(Number(button.dataset.index));
+  const link = event.target.closest(".hybrid-studio-button");
+  if (!link) return;
+  event.preventDefault();
+  history.pushState(null, "", link.getAttribute("href"));
+  loadInitialHybridState();
+  document.querySelector("#studio")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  setHybridStatus("References loaded");
 });
 
 scanButton.addEventListener("click", loadScan);

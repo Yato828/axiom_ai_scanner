@@ -407,16 +407,6 @@ h1 {
   margin-top: 12px;
 }
 
-.generate-image-button {
-  min-height: 38px;
-  border: 0;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #c084fc, #a855f7 52%, #f15bb5);
-  color: #fff7ff;
-  font-weight: 850;
-  cursor: pointer;
-}
-
 .hybrid-studio-button {
   display: inline-grid;
   place-items: center;
@@ -427,29 +417,6 @@ h1 {
   color: #d8f5ff;
   font-weight: 850;
   text-decoration: none;
-}
-
-.generate-image-button:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.generated-slot {
-  margin-top: 12px;
-  padding: 10px;
-  border: 1px solid rgb(168 85 247 / 30%);
-  border-radius: 8px;
-  background: #10091d;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.generated-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  object-fit: cover;
 }
 
 details {
@@ -753,26 +720,12 @@ summary {
   text-decoration: none;
 }
 
-.quick-panel,
 .tokenomics-panel {
-  margin-top: 18px;
+  margin-top: 4px;
   border: 1px solid rgb(168 85 247 / 32%);
   border-radius: 8px;
   background: linear-gradient(180deg, rgb(23 16 39 / 96%), rgb(14 8 25 / 96%));
   box-shadow: var(--shadow);
-}
-
-.quick-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 16px;
-}
-
-.quick-panel h2 {
-  margin: 0;
-  font-size: 20px;
 }
 
 .tokenomics-panel {
@@ -1086,11 +1039,6 @@ summary {
   .hybrid-controls .primary-button,
   .topbar-actions .status-panel {
     width: 100%;
-  }
-
-  .quick-panel {
-    align-items: stretch;
-    flex-direction: column;
   }
 
   .hybrid-upload {

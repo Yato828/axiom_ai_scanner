@@ -17,6 +17,9 @@ $contentTypes = @{
   '.svg' = 'image/svg+xml'
 }
 
+$script:LiveTokenCache = $null
+$script:OgMemecoinCache = $null
+
 function New-Token {
   param(
     [int]$Rank,
@@ -84,7 +87,7 @@ function Get-FallbackTokens {
           ([double]$item.age) `
           ("$($item.theme) momentum on Solana meme watchlist. Local DegenMixer fallback entry with image asset.")
       }
-      return $rows
+      return @(Select-UniqueTokens $rows)
     } catch {}
   }
 
@@ -94,16 +97,50 @@ function Get-FallbackTokens {
 }
 
 function Get-LiveTokens {
+  if ($null -ne $script:LiveTokenCache) {
+    return $script:LiveTokenCache
+  }
+
   $path = Join-Path $projectRoot 'data\solana_live_tokens.json'
   if (Test-Path $path) {
     try {
       $tokens = @((Get-Content -Raw -Path $path | ConvertFrom-Json).tokens)
       if ($tokens.Count -gt 0) {
-        return $tokens
+        $script:LiveTokenCache = @(Select-UniqueTokens $tokens)
+        return $script:LiveTokenCache
       }
     } catch {}
   }
-  return @(Get-FallbackTokens)
+  $script:LiveTokenCache = @(Select-UniqueTokens (Get-FallbackTokens))
+  return $script:LiveTokenCache
+}
+
+function Get-TokenKeys {
+  param([object]$Token)
+  $address = ([string]$Token.address).Trim().ToLowerInvariant()
+  $symbol = ([string]$Token.token).Trim().ToLowerInvariant().TrimStart('$')
+  if (-not $symbol) { $symbol = ([string]$Token.symbol).Trim().ToLowerInvariant().TrimStart('$') }
+  $name = ([string]$Token.name).Trim().ToLowerInvariant()
+  $keys = @("label:$symbol`:$name")
+  if ($address) { $keys += "address:$address" }
+  return $keys
+}
+
+function Select-UniqueTokens {
+  param([object[]]$Tokens)
+  $seen = @{}
+  $rows = @()
+  foreach ($token in @($Tokens)) {
+    $keys = @(Get-TokenKeys $token)
+    $exists = $false
+    foreach ($key in $keys) {
+      if ($seen.ContainsKey($key)) { $exists = $true; break }
+    }
+    if ($exists) { continue }
+    foreach ($key in $keys) { $seen[$key] = $true }
+    $rows += $token
+  }
+  return $rows
 }
 
 function Find-TokenImage {
@@ -126,6 +163,10 @@ function Find-TokenImage {
 }
 
 function Get-OgMemecoins {
+  if ($null -ne $script:OgMemecoinCache) {
+    return $script:OgMemecoinCache
+  }
+
   $path = Join-Path $projectRoot 'data\og_memecoins.json'
   if (Test-Path $path) {
     try {
@@ -138,10 +179,12 @@ function Get-OgMemecoins {
           image_url = Find-TokenImage ([string]$token.name) ([string]$token.symbol)
         }
       }
-      return $rows
+      $script:OgMemecoinCache = $rows
+      return $script:OgMemecoinCache
     } catch {}
   }
-  return @()
+  $script:OgMemecoinCache = @()
+  return $script:OgMemecoinCache
 }
 
 function New-Narratives {
@@ -243,7 +286,7 @@ while ($true) {
     if ($method -eq 'GET' -and $path -eq '/api/scan') {
       $limit = 0
       if ($uri.Query -match 'limit=(\d+)') { $limit = [int]$matches[1] }
-      $allTokens = @(Get-LiveTokens)
+      $allTokens = @(Select-UniqueTokens (Get-LiveTokens))
       $tokens = if ($limit -gt 0) { @($allTokens | Select-Object -First $limit) } else { $allTokens }
       $og = @(Get-OgMemecoins)
       Send-Json $stream @{
@@ -252,7 +295,7 @@ while ($true) {
         min_market_cap_usd = 0
         tokens = $tokens
         og_memecoins = $og
-        narratives = New-Narratives $tokens $og 30
+        narratives = New-Narratives $tokens $og 12
       }
       continue
     }

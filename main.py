@@ -8,6 +8,7 @@ import sys
 import time
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from axiom_scanner.analysis.local_ai import explain_ranked_tokens
@@ -32,6 +33,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = PROJECT_ROOT / "web"
 ALLOWED_CHAINS = ["solana"]
 OG_IMAGE_CACHE: dict[str, str] = {}
+SCAN_CACHE: dict[tuple[str, int], tuple[float, dict[str, Any]]] = {}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -100,9 +102,18 @@ def scan_once(config: ScannerConfig, limit: int) -> list[dict]:
 
     rows: list[dict] = []
     selected_items = []
+    seen_tokens: set[str] = set()
     for item in visible_ranked:
         if len(selected_items) >= limit:
             break
+        token_keys = _token_identity_keys(
+            address=item.snapshot.token_address,
+            symbol=item.snapshot.symbol,
+            name=item.snapshot.name,
+        )
+        if any(token_key in seen_tokens for token_key in token_keys):
+            continue
+        seen_tokens.update(token_keys)
         image_url = item.snapshot.image_url or _resolve_token_image(
             config,
             name=item.snapshot.name,
@@ -216,16 +227,23 @@ def run_web(args: argparse.Namespace) -> int:
             params = parse_qs(query)
             limit = _parse_int(params.get("limit", [str(args.limit)])[0], args.limit)
             config = apply_cli_overrides(load_config(config_path), chains)
-            rows = scan_once(config, limit=limit)
-            og_memecoins = load_og_memecoins(PROJECT_ROOT, config.og_memecoins_path)
-            payload = {
-                "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "count": len(rows),
-                "min_market_cap_usd": config.min_market_cap_usd,
-                "tokens": rows,
-                "og_memecoins": og_memecoins,
-                "narratives": generate_narratives(rows, og_memecoins, limit=12),
-            }
+            cache_key = (_scan_cache_key(config_path, chains), limit)
+            cached = SCAN_CACHE.get(cache_key)
+            now = time.time()
+            if cached and now - cached[0] < _scan_cache_seconds():
+                payload = cached[1]
+            else:
+                rows = scan_once(config, limit=limit)
+                og_memecoins = load_og_memecoins(PROJECT_ROOT, config.og_memecoins_path)
+                payload = {
+                    "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "count": len(rows),
+                    "min_market_cap_usd": config.min_market_cap_usd,
+                    "tokens": rows,
+                    "og_memecoins": og_memecoins,
+                    "narratives": generate_narratives(rows, og_memecoins, limit=12),
+                }
+                SCAN_CACHE[cache_key] = (now, payload)
             self._send_json(payload)
 
         def _send_og_memecoins(self) -> None:
@@ -358,6 +376,31 @@ def _parse_content_length(value: str) -> int:
         return max(int(value), 0)
     except ValueError:
         return 0
+
+
+def _token_identity_keys(address: str, symbol: str, name: str) -> set[str]:
+    clean_address = (address or "").strip().lower()
+    clean_symbol = (symbol or "").strip().lower()
+    clean_name = (name or "").strip().lower()
+    keys = set()
+    if clean_symbol or clean_name:
+        keys.add(f"label:{clean_symbol}:{clean_name}")
+    if clean_address:
+        keys.add(f"address:{clean_address}")
+    return keys
+
+
+def _scan_cache_key(config_path: Path | None, chains: list[str] | None) -> str:
+    path_key = str(config_path.resolve()) if config_path else "default"
+    chains_key = ",".join(chains or ALLOWED_CHAINS)
+    return f"{path_key}:{chains_key}"
+
+
+def _scan_cache_seconds() -> int:
+    try:
+        return max(int(os.getenv("AXIOM_SCAN_CACHE_SECONDS", "45")), 0)
+    except ValueError:
+        return 45
 
 
 def _resolve_og_image(config: ScannerConfig, name: str, symbol: str) -> str:

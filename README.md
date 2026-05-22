@@ -79,8 +79,7 @@ and produces:
 - a mixed meme name and ticker,
 - a short narrative draft,
 - a reference-based image remix brief,
-- a Mixer Studio link for turning the two token images into one artwork,
-- a generated image when `OPENAI_API_KEY` is set.
+- a Mixer Studio link for turning the two token images into one artwork.
 
 Tokens are grouped by signal:
 
@@ -136,25 +135,8 @@ Latency notes:
 - sync mode is enabled by default so completed results can come back directly,
 - if polling is needed, the default interval is 1 second.
 
-The image button uses the trend token image as the primary reference and the OG
-meme image as a secondary remix reference. This is designed for cases like
-keeping an `Aliens` mascot recognizable while adding an antivirus mask, floating
-virus particles, or a changed background from another coin's theme.
-
-Set an API key before starting the web server:
-
-```powershell
-Set-Content .env "OPENAI_API_KEY=sk-..."
-python main.py web --port 8080 --limit 100
-```
-
-Optional settings:
-
-```powershell
-$env:OPENAI_RESPONSES_MODEL="gpt-5.5"
-$env:OPENAI_IMAGE_SIZE="1024x1024"
-$env:OPENAI_IMAGE_QUALITY="medium"
-```
+Repeated dashboard scans are cached for 45 seconds by default. Adjust
+`AXIOM_SCAN_CACHE_SECONDS` if you need fresher data or less load.
 
 ## Free hosting on Render
 
@@ -173,6 +155,10 @@ python main.py web --host 0.0.0.0 --limit 100
 ```
 
 Render provides the public HTTPS URL after the first deploy.
+
+To attach your domain, open the Render service, go to `Settings` -> `Custom
+Domains`, add the domain, then create the DNS record Render shows. Keep API keys
+in Render environment variables, not in the repository.
 
 ## GitHub checklist
 
