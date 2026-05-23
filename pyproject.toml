@@ -1,2 +1,10 @@
+[project]
+name = "axiom-ai-scanner"
+version = "1.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Pillow>=10.4,<12",
+]
+
 [tool.vercel]
 entrypoint = "api.index:handler"
