@@ -19,8 +19,10 @@ another provider that mirrors Axiom-like market data.
 ```text
 axiom_ai_scanner/
   main.py                         # CLI entry point
+  vercel.json                     # Vercel static/API routing
   config.example.json             # Example scanner settings
   .env.example                    # Optional environment variables
+  api/                            # Vercel Python serverless functions
   axiom_scanner/
     config.py                     # Config loading and defaults
     http_client.py                # Small HTTP client with retries
@@ -137,6 +139,36 @@ Latency notes:
 
 Repeated dashboard scans are cached for 45 seconds by default. Adjust
 `AXIOM_SCAN_CACHE_SECONDS` if you need fresher data or less load.
+
+## Deploy on Vercel
+
+This project can run on Vercel through the included `vercel.json` and `api/`
+Python functions. The static dashboard stays in `web/`, while `/api/*` is served
+by Vercel Functions.
+
+Steps:
+
+1. Push this project to GitHub.
+2. Open `https://vercel.com/new` and import the GitHub repository.
+3. Set the project root to `axiom_ai_scanner` if the repository contains more
+   than this folder.
+4. Leave build settings empty/default; this project does not need a frontend
+   build command.
+5. Add environment variables from `.env` in Vercel project settings. At minimum,
+   add `WAVESPEED_API_KEY` or `WAVESPEED_API_KEYS` if you use Mixer Studio image
+   generation.
+6. Deploy.
+
+CLI alternative:
+
+```powershell
+cd C:\Users\Admin\myproject\axiom_ai_scanner
+vercel
+vercel --prod
+```
+
+Do not commit `.env`. Vercel needs the same values entered as Environment
+Variables in the dashboard.
 
 ## Free hosting on Render
 
