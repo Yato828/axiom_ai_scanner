@@ -14,7 +14,7 @@ from axiom_scanner.analysis.wavespeed_hybrid import HybridImageError, should_try
 from axiom_scanner.config import ScannerConfig
 from axiom_scanner.models import TokenSnapshot
 from axiom_scanner.sources.dexscreener import _passes_basic_filters
-from main import _token_identity_keys
+from axiom_dashboard import _token_identity_keys
 
 
 class ScoringTests(unittest.TestCase):

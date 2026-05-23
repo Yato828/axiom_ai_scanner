@@ -7,7 +7,7 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectRoot
 
 if ($Config -ne "") {
-    python main.py --config $Config scan --limit $Limit
+    python axiom_dashboard.py --config $Config scan --limit $Limit
 } else {
-    python main.py scan --limit $Limit
+    python axiom_dashboard.py scan --limit $Limit
 }

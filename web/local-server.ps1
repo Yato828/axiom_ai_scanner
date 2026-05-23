@@ -348,7 +348,7 @@ while ($true) {
 
     if ($method -eq 'POST' -and $path -eq '/api/hybrid-image') {
       Send-Json $stream @{
-        error = 'DegenMixer Studio uses the Python backend. Start it with: python main.py web --port 8080'
+        error = 'DegenMixer Studio uses the Python backend. Start it with: python axiom_dashboard.py web --port 8080'
         code = 'python_backend_required'
       } 501
       continue

@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: ""
-    startCommand: python main.py web --host 0.0.0.0 --limit 100
+    startCommand: python axiom_dashboard.py web --host 0.0.0.0 --limit 100
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.7

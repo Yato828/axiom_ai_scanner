@@ -19,7 +19,7 @@ from axiom_scanner.analysis.wavespeed_hybrid import (
     generate_hybrid_image_request,
 )
 from axiom_scanner.config import ScannerConfig, load_config
-from main import (
+from axiom_dashboard import (
     PROJECT_ROOT,
     WEB_ROOT,
     SCAN_CACHE,

@@ -18,7 +18,7 @@ another provider that mirrors Axiom-like market data.
 
 ```text
 axiom_ai_scanner/
-  main.py                         # CLI entry point
+  axiom_dashboard.py              # CLI entry point
   vercel.json                     # Vercel static/API routing
   config.example.json             # Example scanner settings
   .env.example                    # Optional environment variables
@@ -59,13 +59,13 @@ is installed.
 
 ```powershell
 cd axiom_ai_scanner
-python main.py scan --limit 15
+python axiom_dashboard.py scan --limit 15
 ```
 
 Visual dashboard:
 
 ```powershell
-python main.py web --port 8080 --limit 100
+python axiom_dashboard.py web --port 8080 --limit 100
 ```
 
 Then open:
@@ -109,14 +109,14 @@ Set a WaveSpeed API key before starting the web server:
 
 ```powershell
 Set-Content .env "WAVESPEED_API_KEY=your-key"
-python main.py web --port 8080 --limit 100
+python axiom_dashboard.py web --port 8080 --limit 100
 ```
 
 For fallback across multiple WaveSpeed accounts, use a comma-separated list:
 
 ```powershell
 Set-Content .env "WAVESPEED_API_KEYS=first-key,second-key"
-python main.py web --port 8080 --limit 100
+python axiom_dashboard.py web --port 8080 --limit 100
 ```
 
 Optional settings:
@@ -183,7 +183,7 @@ Steps:
 5. Use this start command if Render asks for it:
 
 ```powershell
-python main.py web --host 0.0.0.0 --limit 100
+python axiom_dashboard.py web --host 0.0.0.0 --limit 100
 ```
 
 Render provides the public HTTPS URL after the first deploy.
@@ -207,13 +207,13 @@ Keep secrets in `.env` only. Commit `.env.example`, not `.env`.
 Watch mode:
 
 ```powershell
-python main.py watch --interval 60 --limit 10
+python axiom_dashboard.py watch --interval 60 --limit 10
 ```
 
 JSON output:
 
 ```powershell
-python main.py scan --format json --limit 20
+python axiom_dashboard.py scan --format json --limit 20
 ```
 
 Run tests:
@@ -228,7 +228,7 @@ Copy `config.example.json` to `config.json` and adjust thresholds:
 
 ```powershell
 Copy-Item config.example.json config.json
-python main.py scan --config config.json
+python axiom_dashboard.py scan --config config.json
 ```
 
 Useful fields:

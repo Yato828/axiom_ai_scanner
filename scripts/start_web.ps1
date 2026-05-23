@@ -6,4 +6,4 @@ param(
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectRoot
 
-python main.py web --port $Port --limit $Limit
+python axiom_dashboard.py web --port $Port --limit $Limit

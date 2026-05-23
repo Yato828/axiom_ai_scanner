@@ -11,9 +11,9 @@ $LogPath = Join-Path $LogDir "scanner.log"
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
 if ($Config -ne "") {
-    $Arguments = "main.py --config `"$Config`" watch --limit $Limit --interval $Interval"
+    $Arguments = "axiom_dashboard.py --config `"$Config`" watch --limit $Limit --interval $Interval"
 } else {
-    $Arguments = "main.py watch --limit $Limit --interval $Interval"
+    $Arguments = "axiom_dashboard.py watch --limit $Limit --interval $Interval"
 }
 
 Start-Process -FilePath "python" `
