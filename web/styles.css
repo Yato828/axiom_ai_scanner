@@ -706,13 +706,6 @@ summary {
   color: #d8f5ff;
 }
 
-.buy-now-link {
-  min-width: 92px;
-  border-color: rgb(241 91 181 / 44%);
-  background: linear-gradient(135deg, #c084fc, #a855f7 52%, #f15bb5);
-  color: #fff7ff;
-}
-
 .link-button {
   display: inline-grid;
   place-items: center;
@@ -983,13 +976,12 @@ summary {
 
   .main-nav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
   }
 
   .nav-link,
-  .icon-link,
-  .buy-now-link {
+  .icon-link {
     min-width: 0;
     width: 100%;
   }
