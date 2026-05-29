@@ -141,9 +141,9 @@ class ScoringTests(unittest.TestCase):
 
     def test_wavespeed_fallback_handles_busy_keys(self) -> None:
         error = HybridImageError(
-            "WaveSpeed API error: too many concurrent requests",
+            "WaveSpeed API error: You have reached your concurrency limit.",
             code="wavespeed_error",
-            status=429,
+            status=400,
         )
 
         self.assertTrue(should_try_next_key(error))

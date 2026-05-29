@@ -70,6 +70,8 @@ PROMPT_BLOCKLIST = (
 
 _KEY_ROTATION_LOCK = threading.Lock()
 _KEY_ROTATION_CURSOR = uuid.uuid4().int
+_KEY_COOLDOWN_UNTIL: dict[str, float] = {}
+DEFAULT_KEY_COOLDOWN_SECONDS = 90
 
 
 class HybridImageError(RuntimeError):
@@ -123,6 +125,8 @@ def generate_hybrid_image_request(
             )
         except HybridImageError as exc:
             last_error = exc
+            if is_concurrency_limit_error(exc):
+                put_wavespeed_key_on_cooldown(api_key)
             if not should_try_next_key(exc) or attempt_key_number == len(key_order):
                 raise
             log_hybrid_event(
@@ -294,7 +298,29 @@ def rotated_wavespeed_api_keys(keys: list[str]) -> list[tuple[int, str]]:
         offset = _KEY_ROTATION_CURSOR % len(fallback_keys)
         _KEY_ROTATION_CURSOR += 1
 
-    return [primary_key] + fallback_keys[offset:] + fallback_keys[:offset]
+    key_order = [primary_key] + fallback_keys[offset:] + fallback_keys[:offset]
+    available_keys = [item for item in key_order if not wavespeed_key_is_on_cooldown(item[1])]
+    return available_keys or key_order
+
+
+def wavespeed_key_is_on_cooldown(api_key: str) -> bool:
+    with _KEY_ROTATION_LOCK:
+        cooldown_until = _KEY_COOLDOWN_UNTIL.get(api_key, 0.0)
+        if cooldown_until <= time.monotonic():
+            _KEY_COOLDOWN_UNTIL.pop(api_key, None)
+            return False
+        return True
+
+
+def put_wavespeed_key_on_cooldown(api_key: str) -> None:
+    seconds = parse_positive_int(os.getenv("WAVESPEED_KEY_COOLDOWN_SECONDS", "")) or DEFAULT_KEY_COOLDOWN_SECONDS
+    with _KEY_ROTATION_LOCK:
+        _KEY_COOLDOWN_UNTIL[api_key] = time.monotonic() + seconds
+
+
+def is_concurrency_limit_error(exc: HybridImageError) -> bool:
+    message = str(exc).lower()
+    return "concurrency" in message or "concurrent" in message
 
 
 def should_try_next_key(exc: HybridImageError) -> bool:
@@ -309,6 +335,7 @@ def should_try_next_key(exc: HybridImageError) -> bool:
         "already",
         "balance",
         "busy",
+        "concurrency",
         "concurrent",
         "credit",
         "insufficient",
