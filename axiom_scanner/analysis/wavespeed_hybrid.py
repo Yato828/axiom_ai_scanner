@@ -5,6 +5,7 @@ import json
 import mimetypes
 import os
 import re
+import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -67,6 +68,9 @@ PROMPT_BLOCKLIST = (
     "nsfw",
 )
 
+_KEY_ROTATION_LOCK = threading.Lock()
+_KEY_ROTATION_CURSOR = uuid.uuid4().int
+
 
 class HybridImageError(RuntimeError):
     def __init__(self, message: str, code: str, status: int = 400) -> None:
@@ -105,8 +109,9 @@ def generate_hybrid_image_request(
     image_b = resolve_input_image("image_b", fields, files, web_root)
     normalized_images = normalize_images_for_provider([image_a, image_b])
 
+    key_order = rotated_wavespeed_api_keys(api_keys)
     last_error: HybridImageError | None = None
-    for key_index, api_key in enumerate(api_keys, start=1):
+    for attempt_key_number, (key_index, api_key) in enumerate(key_order, start=1):
         try:
             return generate_hybrid_with_key(
                 image_a=normalized_images[0],
@@ -118,8 +123,14 @@ def generate_hybrid_image_request(
             )
         except HybridImageError as exc:
             last_error = exc
-            if not should_try_next_key(exc) or key_index == len(api_keys):
+            if not should_try_next_key(exc) or attempt_key_number == len(key_order):
                 raise
+            log_hybrid_event(
+                "key_retry",
+                key_index=key_index,
+                next_key_index=key_order[attempt_key_number][0],
+                code=exc.code,
+            )
 
     if last_error:
         raise last_error
@@ -269,19 +280,43 @@ def get_wavespeed_api_keys() -> list[str]:
     return result
 
 
+def rotated_wavespeed_api_keys(keys: list[str]) -> list[tuple[int, str]]:
+    if len(keys) <= 1:
+        return [(index, key) for index, key in enumerate(keys, start=1)]
+
+    global _KEY_ROTATION_CURSOR
+    with _KEY_ROTATION_LOCK:
+        offset = _KEY_ROTATION_CURSOR % len(keys)
+        _KEY_ROTATION_CURSOR += 1
+
+    indexed_keys = list(enumerate(keys, start=1))
+    return indexed_keys[offset:] + indexed_keys[:offset]
+
+
 def should_try_next_key(exc: HybridImageError) -> bool:
-    if exc.code not in {"wavespeed_error", "provider_rejected"}:
+    if exc.code not in {"wavespeed_error", "provider_rejected", "wavespeed_unreachable", "generation_timeout"}:
         return False
+
+    if exc.status in {408, 409, 429, 500, 502, 503, 504}:
+        return True
 
     message = str(exc).lower()
     retry_markers = {
+        "already",
         "balance",
+        "busy",
+        "concurrent",
         "credit",
         "insufficient",
+        "gateway",
         "payment",
+        "processing",
         "quota",
+        "queue",
         "rate",
         "limit",
+        "timeout",
+        "too many",
         "top-up",
         "top up",
         "unauthorized",
@@ -648,7 +683,8 @@ def wavespeed_error_from_http(exc: HTTPError) -> HybridImageError:
         message = str(payload.get("message") or payload.get("error") or message)
     except json.JSONDecodeError:
         pass
-    return HybridImageError(f"WaveSpeed API error: {message}", "wavespeed_error", 502)
+    status = exc.code if 400 <= exc.code <= 599 else 502
+    return HybridImageError(f"WaveSpeed API error: {message}", "wavespeed_error", status)
 
 
 def build_file_form_body(boundary: str, image: HybridImage) -> bytes:

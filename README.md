@@ -119,6 +119,10 @@ Set-Content .env "WAVESPEED_API_KEYS=first-key,second-key"
 python axiom_dashboard.py web --port 8080 --limit 100
 ```
 
+When multiple keys are set, Mixer Studio rotates the first key used for each
+request. If a selected key is rate-limited, out of balance, busy, unreachable, or
+times out, the backend retries the same generation with the next key.
+
 Optional settings:
 
 ```powershell

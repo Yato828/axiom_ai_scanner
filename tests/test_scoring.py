@@ -11,6 +11,7 @@ from axiom_scanner.analysis.image_generation import (
 from axiom_scanner.analysis.narratives import generate_narratives, normalize_og_memecoins
 from axiom_scanner.analysis.scoring import rank_tokens
 from axiom_scanner.analysis.wavespeed_hybrid import HybridImageError, should_try_next_key
+from axiom_scanner.analysis.wavespeed_hybrid import rotated_wavespeed_api_keys
 from axiom_scanner.config import ScannerConfig
 from axiom_scanner.models import TokenSnapshot
 from axiom_scanner.sources.dexscreener import _passes_basic_filters
@@ -137,6 +138,24 @@ class ScoringTests(unittest.TestCase):
         )
 
         self.assertTrue(should_try_next_key(error))
+
+    def test_wavespeed_fallback_handles_busy_keys(self) -> None:
+        error = HybridImageError(
+            "WaveSpeed API error: too many concurrent requests",
+            code="wavespeed_error",
+            status=429,
+        )
+
+        self.assertTrue(should_try_next_key(error))
+
+    def test_wavespeed_keys_rotate_between_requests(self) -> None:
+        keys = ["first-key", "second-key", "third-key"]
+
+        first_order = rotated_wavespeed_api_keys(keys)
+        second_order = rotated_wavespeed_api_keys(keys)
+
+        self.assertCountEqual(first_order, [(1, "first-key"), (2, "second-key"), (3, "third-key")])
+        self.assertNotEqual(first_order[0], second_order[0])
 
     def test_openai_key_list_deduplicates_fallback_keys(self) -> None:
         with patch.dict(
