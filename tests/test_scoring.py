@@ -148,14 +148,16 @@ class ScoringTests(unittest.TestCase):
 
         self.assertTrue(should_try_next_key(error))
 
-    def test_wavespeed_keys_rotate_between_requests(self) -> None:
+    def test_wavespeed_keeps_primary_key_first_and_rotates_fallbacks(self) -> None:
         keys = ["first-key", "second-key", "third-key"]
 
         first_order = rotated_wavespeed_api_keys(keys)
         second_order = rotated_wavespeed_api_keys(keys)
 
         self.assertCountEqual(first_order, [(1, "first-key"), (2, "second-key"), (3, "third-key")])
-        self.assertNotEqual(first_order[0], second_order[0])
+        self.assertEqual(first_order[0], (1, "first-key"))
+        self.assertEqual(second_order[0], (1, "first-key"))
+        self.assertNotEqual(first_order[1], second_order[1])
 
     def test_openai_key_list_deduplicates_fallback_keys(self) -> None:
         with patch.dict(

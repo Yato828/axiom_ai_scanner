@@ -284,13 +284,17 @@ def rotated_wavespeed_api_keys(keys: list[str]) -> list[tuple[int, str]]:
     if len(keys) <= 1:
         return [(index, key) for index, key in enumerate(keys, start=1)]
 
+    primary_key = (1, keys[0])
+    fallback_keys = list(enumerate(keys[1:], start=2))
+    if len(fallback_keys) <= 1:
+        return [primary_key] + fallback_keys
+
     global _KEY_ROTATION_CURSOR
     with _KEY_ROTATION_LOCK:
-        offset = _KEY_ROTATION_CURSOR % len(keys)
+        offset = _KEY_ROTATION_CURSOR % len(fallback_keys)
         _KEY_ROTATION_CURSOR += 1
 
-    indexed_keys = list(enumerate(keys, start=1))
-    return indexed_keys[offset:] + indexed_keys[:offset]
+    return [primary_key] + fallback_keys[offset:] + fallback_keys[:offset]
 
 
 def should_try_next_key(exc: HybridImageError) -> bool:
