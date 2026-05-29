@@ -456,6 +456,15 @@ const uploadableImageTypes = new Set([
 ]);
 const defaultPrompt =
   "Create a coherent DegenMixer sticker-style character or emblem from these two reference images. Preserve recognizable traits, colors, and shapes from both inputs. Keep the composition clean, high contrast, polished, and centered.";
+const providerPendingMarkers = [
+  "concurrency limit",
+  "still processing",
+  "request id:",
+  "timeout",
+  "gateway time-out",
+  "gateway timeout",
+  "rate limit",
+];
 
 function setHybridStatus(text) {
   hybridStatusText.textContent = text;
@@ -477,6 +486,20 @@ function setHybridResultImage(url) {
   hybridResultSlot.append(image);
   hybridResultLink.href = url;
   hybridResultLink.hidden = false;
+}
+
+function setHybridPendingMessage() {
+  hybridResultSlot.innerHTML = "";
+  const message = document.createElement("span");
+  message.className = "pending-message";
+  message.textContent = "Generation in progress. Please wait a little longer...";
+  hybridResultSlot.append(message);
+  hybridResultLink.hidden = true;
+}
+
+function isProviderPendingError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return providerPendingMarkers.some((marker) => message.includes(marker));
 }
 
 function setPreviewFromUrl(img, input, url, label, labelText) {
@@ -544,6 +567,11 @@ async function submitHybrid(event) {
     setHybridResultImage(payload.output_url);
     setHybridStatus("Mix ready");
   } catch (error) {
+    if (isProviderPendingError(error)) {
+      setHybridPendingMessage();
+      setHybridStatus("Generating...");
+      return;
+    }
     setHybridResultMessage(error.message || "Failed to create mix.");
     setHybridStatus("Mix failed");
   } finally {
