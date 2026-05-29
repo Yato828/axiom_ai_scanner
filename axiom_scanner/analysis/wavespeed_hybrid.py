@@ -708,7 +708,7 @@ def parse_float(value: str | None, fallback: float) -> float:
 
 
 def wavespeed_sync_mode_enabled() -> bool:
-    raw = os.getenv("WAVESPEED_SYNC_MODE", "true").strip().lower()
+    raw = os.getenv("WAVESPEED_SYNC_MODE", "false").strip().lower()
     return raw not in {"0", "false", "no", "off"}
 
 

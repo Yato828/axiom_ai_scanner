@@ -124,7 +124,7 @@ Optional settings:
 ```powershell
 $env:WAVESPEED_IMAGE_SIZE="1024*1024"
 $env:WAVESPEED_TIMEOUT_SECONDS="120"
-$env:WAVESPEED_SYNC_MODE="true"
+$env:WAVESPEED_SYNC_MODE="false"
 $env:WAVESPEED_POLL_INTERVAL_SECONDS="1.0"
 ```
 
@@ -134,8 +134,8 @@ Latency notes:
 
 - the backend normalizes both inputs in parallel,
 - both images upload to WaveSpeed in parallel,
-- sync mode is enabled by default so completed results can come back directly,
-- if polling is needed, the default interval is 1 second.
+- sync mode is disabled by default to avoid provider gateway timeouts,
+- the backend polls for the result every 1 second by default.
 
 Repeated dashboard scans are cached for 45 seconds by default. Adjust
 `AXIOM_SCAN_CACHE_SECONDS` if you need fresher data or less load.
