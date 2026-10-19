@@ -15,3 +15,8 @@ build/
 dist/
 data/solana_live_tokens.json
 image_merge_app/
+node_modules/
+web/dist/
+.runtime/
+test-results/
+playwright-report/

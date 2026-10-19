@@ -1,7 +1,11 @@
 # Axiom Meme Lab
 
-CLI scanner and web dashboard for finding currently hyped on-chain tokens, then
-mixing those trends with OG meme coins into draft meme narratives.
+CLI scanner and web dashboard for finding on-chain trends, mixing two token images,
+and launching a custom or mixed-image token on Pump.fun in Solana mainnet.
+
+**Launch setup:** configure `SOLANA_RPC_URL` and `PINATA_JWT` on the server.
+Without these, users can prepare drafts and connect wallets, while the real
+launch button stays disabled. See [setup and production notes](docs/production.md).
 
 Important: this tool ranks tokens by liquidity, volume, transactions, price momentum,
 age, boosts, and risk flags. It does not guarantee profit and should not be treated
@@ -42,7 +46,11 @@ axiom_ai_scanner/
   web/
     index.html                    # Full dashboard and mixer studio page
     styles.css                    # All dashboard styles
-    app.js                        # All dashboard browser logic
+    app.js                        # Feed and queued image generation
+    launcher.js                   # Wallet, drafts and launch review
+    launch-chain.js               # Lazy-loaded wallet transaction flow
+    pump-create.js                # Fixed Pump create_v2 instruction
+    dist/                         # Generated, compressed browser bundles
     assets/                       # Images and token icons
 ```
 
@@ -51,11 +59,16 @@ axiom_ai_scanner/
 Install dependencies once:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.lock
 ```
 
-The same commands work on Windows, macOS, and Linux as long as Python 3.10+
-is installed.
+The same commands work on Windows, macOS, and Linux as long as Python 3.12 and Node.js 22+
+are installed. The CLI needs only Python. Build the web interface once:
+
+```sh
+npm ci
+npm run build
+```
 
 ```powershell
 cd axiom_ai_scanner
@@ -108,14 +121,14 @@ with a safer prompt on Seedream V4.5 Edit and then falls back to Seedream V4 Edi
 Set a WaveSpeed API key before starting the web server:
 
 ```powershell
-Set-Content .env "WAVESPEED_API_KEY=your-key"
+Add-Content .env "WAVESPEED_API_KEY=your-key"
 python axiom_dashboard.py web --port 8080 --limit 100
 ```
 
 For fallback across multiple WaveSpeed accounts, use a comma-separated list:
 
 ```powershell
-Set-Content .env "WAVESPEED_API_KEYS=first-key,second-key"
+Add-Content .env "WAVESPEED_API_KEYS=first-key,second-key"
 python axiom_dashboard.py web --port 8080 --limit 100
 ```
 
@@ -150,14 +163,19 @@ This project can run on Vercel through the included `vercel.json` and `api/`
 Python functions. The static dashboard stays in `web/`, while `/api/*` is served
 by Vercel Functions.
 
+Vercel serves the HTTP application only. Set `AXIOM_ENV=production`,
+`AXIOM_PUBLIC_ORIGIN` and `REDIS_URL`, and run `python -m axiom_scanner.worker`
+as a separate persistent service connected to the same Redis. Background threads
+inside serverless requests are not used for scans or paid generation.
+
 Steps:
 
 1. Push this project to GitHub.
 2. Open `https://vercel.com/new` and import the GitHub repository.
 3. Set the project root to `axiom_ai_scanner` if the repository contains more
    than this folder.
-4. Leave build settings empty/default; this project does not need a frontend
-   build command.
+4. Use the included `npm ci && npm run build` build command for the wallet
+   bundle. Install Python dependencies from `requirements.lock`.
 5. Add environment variables from `.env` in Vercel project settings. At minimum,
    add `WAVESPEED_API_KEY` or `WAVESPEED_API_KEYS` if you use Mixer Studio image
    generation.
@@ -174,34 +192,31 @@ vercel --prod
 Do not commit `.env`. Vercel needs the same values entered as Environment
 Variables in the dashboard.
 
-## Free hosting on Render
+## Production deployment
 
-This repository includes `render.yaml`, `requirements.txt`, and `Procfile`.
+See [the production and launch guide](docs/production.md) for wallet sign-in,
+Pump.fun mainnet setup, IPFS hosting, Redis, background workers and deployment.
 
-Steps:
+The production topology is a Gunicorn web service, a separate worker and shared
+Redis. `render.yaml` describes those services; it uses paid plans and does not
+create anything until you deploy it. A single free web process is not the
+production configuration for queues and shared wallet sessions.
 
-1. Push this project to GitHub.
-2. Open `https://render.com`.
-3. Create a new Web Service or Blueprint from the GitHub repository.
-4. Choose the Free instance type.
-5. Use this start command if Render asks for it:
+For a local container setup, copy `.env.example` to `.env` and run:
 
-```powershell
-python axiom_dashboard.py web --host 0.0.0.0 --limit 100
+```sh
+docker compose up --build
 ```
 
-Render provides the public HTTPS URL after the first deploy.
-
-To attach your domain, open the Render service, go to `Settings` -> `Custom
-Domains`, add the domain, then create the DNS record Render shows. Keep API keys
-in Render environment variables, not in the repository.
+The dashboard is available on `http://127.0.0.1:8080`. The Redis service is not
+exposed to the host network.
 
 ## GitHub checklist
 
 Before pushing:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.lock
 python -m unittest discover -s tests
 git status --short
 ```

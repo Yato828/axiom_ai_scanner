@@ -3,7 +3,10 @@ name = "axiom-ai-scanner"
 version = "1.0.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "Pillow>=10.4,<12",
+  "Pillow>=12,<13",
+  "PyNaCl>=1.6.2,<2",
+  "redis>=6.4,<8",
+  "gunicorn>=23,<27; sys_platform != 'win32'",
 ]
 
 [tool.vercel]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from urllib.parse import quote_plus
 
@@ -16,7 +17,20 @@ class DexScreenerSource(TokenSource):
 
     def __init__(self, config: ScannerConfig) -> None:
         self.config = config
-        self.http = HttpClient(timeout_seconds=config.request_timeout_seconds)
+        self.http = HttpClient(timeout_seconds=min(config.request_timeout_seconds, 8), retries=1)
+
+    def _fetch_many(self, urls):
+        """Bound provider concurrency and retain useful results on partial outages."""
+        def fetch(url):
+            try:
+                return self.http.get_json(url)
+            except RuntimeError:
+                return None
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            results = list(executor.map(fetch, urls))
+        if results and all(result is None for result in results):
+            raise RuntimeError("Market data provider is unavailable")
+        return [result for result in results if result is not None]
 
     def fetch_tokens(self) -> list[TokenSnapshot]:
         candidates = self._fetch_candidate_tokens()
@@ -34,8 +48,7 @@ class DexScreenerSource(TokenSource):
         seen: set[tuple[str, str]] = set()
         candidates: list[dict[str, Any]] = []
 
-        for url in urls:
-            payload = self.http.get_json(url)
+        for payload in self._fetch_many(urls):
             if not isinstance(payload, list):
                 continue
 
@@ -66,12 +79,13 @@ class DexScreenerSource(TokenSource):
                 by_chain[chain_id].append(address)
 
         pairs: list[dict[str, Any]] = []
+        urls = []
         for chain_id, addresses in by_chain.items():
             for chunk in _chunks(_dedupe(addresses), size=30):
-                url = f"{self.BASE_URL}/tokens/v1/{chain_id}/{','.join(chunk)}"
-                payload = self.http.get_json(url)
-                if isinstance(payload, list):
-                    pairs.extend(pair for pair in payload if isinstance(pair, dict))
+                urls.append(f"{self.BASE_URL}/tokens/v1/{chain_id}/{','.join(chunk)}")
+        for payload in self._fetch_many(urls):
+            if isinstance(payload, list):
+                pairs.extend(pair for pair in payload if isinstance(pair, dict))
 
         return pairs
 
@@ -80,9 +94,8 @@ class DexScreenerSource(TokenSource):
         pairs: list[dict[str, Any]] = []
         seen_pairs: set[str] = set()
 
-        for term in self.config.source.search_terms:
-            url = f"{self.BASE_URL}/latest/dex/search?q={quote_plus(term)}"
-            payload = self.http.get_json(url)
+        urls = [f"{self.BASE_URL}/latest/dex/search?q={quote_plus(term)}" for term in self.config.source.search_terms]
+        for payload in self._fetch_many(urls):
             for pair in payload.get("pairs", []) if isinstance(payload, dict) else []:
                 if not isinstance(pair, dict):
                     continue

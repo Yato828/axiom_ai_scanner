@@ -18,6 +18,20 @@ let refreshTimer = null;
 let currentTokens = [];
 let currentOgTokens = [];
 let currentNarratives = [];
+let scanInFlight = false;
+let scanRetryTimer = null;
+
+function safeImageUrl(value) {
+  if (typeof value !== "string") return "";
+  if (value.startsWith("/") && !value.startsWith("//") && !value.includes("\\")) return value;
+  try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password ? url.href : ""; }
+  catch { return ""; }
+}
+
+function safeExternalUrl(value) {
+  try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password ? url.href : "#"; }
+  catch { return "#"; }
+}
 
 function money(value) {
   const number = Number(value || 0);
@@ -101,8 +115,9 @@ function fallbackImageUrl(token) {
 
 function imageMarkup(token, className = "token-image") {
   const fallback = fallbackImageUrl(token);
-  if (token.image_url) {
-    return `<img class="${className}" src="${escapeHtml(token.image_url)}" alt="${escapeHtml(token.token || token.symbol || token.name)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${escapeHtml(fallback)}';" />`;
+  const source = safeImageUrl(token.image_url);
+  if (source) {
+    return `<img class="${className}" src="${escapeHtml(source)}" data-fallback="${escapeHtml(fallback)}" alt="${escapeHtml(token.token || token.symbol || token.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`;
   }
   return `<img class="${className}" src="${escapeHtml(fallback)}" alt="${escapeHtml(token.token || token.symbol || token.name)}" loading="lazy" />`;
 }
@@ -161,7 +176,7 @@ function tokenCard(token) {
       <div class="risk-list">${risksMarkup(token.risk_flags)}</div>
 
       <div class="card-actions">
-        <a href="${escapeHtml(token.url)}" target="_blank" rel="noreferrer">DexScreener</a>
+        <a href="${escapeHtml(safeExternalUrl(token.url))}" target="_blank" rel="noreferrer">DexScreener</a>
         <button class="copy-button" type="button" data-address="${escapeHtml(token.address)}">Copy address</button>
       </div>
     </article>
@@ -302,16 +317,24 @@ function escapeHtml(value) {
 }
 
 async function loadScan() {
-  const limit = Math.max(Number(limitInput.value || 0), 0);
+  if (scanInFlight || document.hidden) return;
+  scanInFlight = true;
+  if (scanRetryTimer) clearTimeout(scanRetryTimer);
+  const limit = Math.min(Math.max(Number(limitInput.value || 40), 1), 200);
   scanButton.disabled = true;
   statusText.textContent = "Mixing trends...";
 
   try {
     const query = limit > 0 ? `?limit=${encodeURIComponent(limit)}` : "";
-    const response = await fetch(`/api/scan${query}`, { cache: "no-store" });
+    const response = await fetch(`/api/scan${query}`, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const payload = await response.json();
+    if (response.status === 202) {
+      statusText.textContent = payload.message || "Loading the shared market feed…";
+      scanRetryTimer = setTimeout(loadScan, Math.min(Math.max(payload.retry_after || 3, 3), 30) * 1000);
+      return;
+    }
     const tokens = uniqueTokens(payload.tokens || []).filter(
       (token) => String(token.chain || "").toLowerCase() === "solana",
     );
@@ -320,22 +343,22 @@ async function loadScan() {
     tokenGrid.innerHTML = renderGroupedTokens(tokens);
     renderOgPreview(currentOgTokens);
     renderNarratives(payload.narratives || []);
-    resolveOgImages(currentOgTokens);
     if (!ogInput.value.trim()) ogInput.value = formatOgList(currentOgTokens);
     emptyState.hidden = tokens.length !== 0;
     foundCount.textContent = String(tokens.length);
     hotCount.textContent = String(tokens.filter((token) => token.signal === "HOT").length);
     updatedAt.textContent = payload.updated_at || "-";
     mcapLabel.textContent = `Pairs above ${money(payload.min_market_cap_usd)} mcap`;
-    statusText.textContent = "Mix updated";
+    statusText.textContent = payload.stale ? "Showing the last available feed" : "Mix updated";
   } catch (error) {
-    statusText.textContent = "Mix error";
-    tokenGrid.innerHTML = "";
-    renderNarratives([]);
-    emptyState.hidden = false;
-    emptyState.querySelector("h2").textContent = "Could not load market data";
-    emptyState.querySelector("p").textContent = String(error.message || error);
+    statusText.textContent = currentTokens.length ? "Feed unavailable · keeping your last mix" : "Market data is temporarily unavailable";
+    if (!currentTokens.length) {
+      emptyState.hidden = false;
+      emptyState.querySelector("h2").textContent = "Could not load market data";
+      emptyState.querySelector("p").textContent = "Please try again shortly. Mixer Studio and token drafts are still available.";
+    }
   } finally {
+    scanInFlight = false;
     scanButton.disabled = false;
   }
 }
@@ -446,6 +469,7 @@ const imageBLabel = document.querySelector("#imageBLabel");
 const promptInput = document.querySelector("#hybridPrompt");
 
 const previewUrls = new Map();
+let hybridInFlight = false;
 const uploadableImageTypes = new Set([
   "image/bmp",
   "image/gif",
@@ -470,6 +494,8 @@ function setHybridResultMessage(text) {
 }
 
 function setHybridResultImage(url) {
+  url = safeImageUrl(url);
+  if (!url) throw new Error("The image provider returned an invalid image URL.");
   hybridResultSlot.innerHTML = "";
   const image = document.createElement("img");
   image.src = url;
@@ -489,6 +515,7 @@ function setHybridPendingMessage() {
 }
 
 function setPreviewFromUrl(img, input, url, label, labelText) {
+  url = safeImageUrl(url);
   input.value = url || "";
   label.textContent = labelText || label.textContent;
   if (!url) {
@@ -527,7 +554,7 @@ function hasHybridImage(fileInput, urlInput) {
 }
 
 function updateHybridButton() {
-  hybridButton.disabled = !(hasHybridImage(imageAFile, imageAUrl) && hasHybridImage(imageBFile, imageBUrl));
+  hybridButton.disabled = hybridInFlight || !(hasHybridImage(imageAFile, imageAUrl) && hasHybridImage(imageBFile, imageBUrl));
 }
 
 async function submitHybrid(event) {
@@ -536,8 +563,38 @@ async function submitHybrid(event) {
   if (hybridButton.disabled) return;
 
   hybridButton.disabled = true;
+  hybridInFlight = true;
   setHybridStatus("Generating...");
   setHybridPendingMessage();
+  try {
+    if (!window.degenMixer) throw new Error("Wallet tools are still loading. Please try again.");
+    await window.degenMixer.requireWallet();
+    const formData = await buildHybridFormData();
+    const response = await window.degenMixer.api("/api/hybrid-image", {
+      method: "POST", headers: { "Idempotency-Key": crypto.randomUUID() }, body: formData,
+    });
+    const job = await response.json();
+    const deadline = Date.now() + 15 * 60_000;
+    let result = job;
+    while (["queued", "running"].includes(result.state) && Date.now() < deadline) {
+      setHybridStatus(result.state === "queued" ? "Queued…" : "Generating…");
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      result = await (await window.degenMixer.api(`/api/jobs/${job.job_id}`)).json();
+    }
+    if (result.state !== "completed") throw new Error(result.error || "Generation is taking longer. Check your request before starting another.");
+    setHybridResultImage(result.result.output_url);
+    setHybridStatus("Mix ready");
+    const params = hashStudioParams();
+    window.dispatchEvent(new CustomEvent("degenmixer:mix-ready", { detail: {
+      url: result.result.output_url, name: params.get("title") || "", symbol: params.get("ticker") || "",
+    } }));
+  } catch (error) {
+    setHybridStatus("Could not generate image");
+    setHybridResultMessage(error.message || "Please try again later.");
+  } finally {
+    hybridInFlight = false;
+    updateHybridButton();
+  }
 }
 
 async function buildHybridFormData() {
@@ -550,7 +607,7 @@ async function buildHybridFormData() {
 async function setImageField(formData, fieldName, fileInput, urlInput) {
   const file = fileInput.files?.[0];
   if (file) {
-    formData.set(fieldName, file, file.name || `${fieldName}.png`);
+    formData.set(fieldName, await compactImage(file), `${fieldName}.jpg`);
     return;
   }
 
@@ -559,13 +616,32 @@ async function setImageField(formData, fieldName, fileInput, urlInput) {
 
   const blob = await uploadableBlobFromUrl(url);
   if (blob) {
-    formData.set(fieldName, blob, `${fieldName}.png`);
+    formData.set(fieldName, await compactImage(blob), `${fieldName}.jpg`);
   }
+}
+
+async function compactImage(blob) {
+  if (blob.size > 3 * 1024 * 1024) throw new Error("Each reference image must be smaller than 3 MB.");
+  const image = await createImageBitmap(blob);
+  try {
+    if (image.width * image.height > 16_000_000) throw new Error("Reference image exceeds 16 megapixels.");
+    const scale = Math.min(1, 1280 / Math.max(image.width, image.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const compact = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", .86));
+    if (!compact || compact.size > 1_700_000) throw new Error("Image is too large after resizing. Please choose a smaller image.");
+    return compact;
+  } finally { image.close(); }
 }
 
 async function uploadableBlobFromUrl(url) {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(15_000), credentials: "omit" });
     if (!response.ok) return null;
     const blob = await response.blob();
     if (uploadableImageTypes.has(blob.type)) return blob;
@@ -582,7 +658,7 @@ async function svgBlobToPng(svgBlob) {
   const objectUrl = URL.createObjectURL(svgBlob);
   try {
     const image = await loadImage(objectUrl);
-    const size = Math.max(image.naturalWidth || 512, image.naturalHeight || 512, 512);
+    const size = Math.min(Math.max(image.naturalWidth || 512, image.naturalHeight || 512, 512), 1280);
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
@@ -668,6 +744,14 @@ imageAFile.addEventListener("change", () => setPreviewFromFile(imageAFile, image
 imageBFile.addEventListener("change", () => setPreviewFromFile(imageBFile, imageBPreview));
 hybridForm.addEventListener("submit", submitHybrid);
 window.addEventListener("hashchange", loadInitialHybridState);
+document.addEventListener("error", event => {
+  const img = event.target;
+  if (img instanceof HTMLImageElement && img.dataset.fallback) {
+    img.src = img.dataset.fallback;
+    delete img.dataset.fallback;
+  }
+}, true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadScan(); });
 
 scheduleRefresh();
 loadInitialHybridState();

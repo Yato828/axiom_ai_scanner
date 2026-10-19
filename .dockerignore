@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+.venv
+venv
+node_modules
+web/dist
+logs
+__pycache__
+**/__pycache__
+tests
+test-results
+playwright-report
+.runtime
+config.json
+data/solana_live_tokens.json

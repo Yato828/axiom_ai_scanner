@@ -1,14 +1,44 @@
+# This production topology uses paid services. Deploy explicitly after reviewing the plans.
 services:
+  - type: keyvalue
+    name: degenmixer-state
+    plan: 256mb
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
   - type: web
     name: axiom-ai-scanner
-    runtime: python
-    plan: free
-    buildCommand: ""
-    startCommand: python axiom_dashboard.py web --host 0.0.0.0 --limit 100
+    runtime: docker
+    plan: 1c-2g
+    healthCheckPath: /api/health
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.7
+      - key: AXIOM_ENV
+        value: production
+      - key: AXIOM_PUBLIC_ORIGIN
+        sync: false
+      - key: SOLANA_RPC_URL
+        sync: false
+      - key: PINATA_JWT
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: degenmixer-state
+          property: connectionString
+  - type: worker
+    name: degenmixer-worker
+    runtime: docker
+    plan: 1c-2g
+    dockerCommand: python -m axiom_scanner.worker
+    envVars:
+      - key: AXIOM_ENV
+        value: production
       - key: WAVESPEED_API_KEYS
         sync: false
       - key: OPENAI_API_KEYS
         sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: degenmixer-state
+          property: connectionString

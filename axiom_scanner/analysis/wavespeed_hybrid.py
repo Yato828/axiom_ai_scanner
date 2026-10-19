@@ -19,6 +19,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import unquote_to_bytes, urlparse
 from urllib.request import Request, urlopen
+from axiom_scanner.safe_images import download_image
+from axiom_scanner.web_security import ApiError
 
 
 WAVESPEED_BASE_URL = "https://api.wavespeed.ai/api/v3"
@@ -105,6 +107,8 @@ def generate_hybrid_image_request(
 
     fields, files = parse_request_body(content_type, body)
     prompt = (fields.get("prompt") or "").strip() or DEFAULT_PROMPT
+    if len(prompt) > 1400:
+        raise HybridImageError("Prompt must be at most 1400 characters.", "bad_prompt")
     size = normalize_size(fields.get("size") or os.getenv("WAVESPEED_IMAGE_SIZE", "1024*1024"))
 
     image_a = resolve_input_image("image_a", fields, files, web_root)
@@ -392,6 +396,8 @@ def parse_multipart(
         name = part.get_param("name", header="content-disposition")
         if not name:
             continue
+        if name in fields or name in files or len(fields) + len(files) >= 16:
+            raise HybridImageError("Duplicate or too many form fields.", "bad_multipart")
 
         payload = part.get_payload(decode=True) or b""
         filename = part.get_param("filename", header="content-disposition")
@@ -450,9 +456,11 @@ def normalize_image_for_provider(image: HybridImage) -> HybridImage:
 
     try:
         with Image.open(BytesIO(image.data)) as opened:
+            if opened.width * opened.height > 16_000_000:
+                raise HybridImageError("Image exceeds 16 megapixels.", "invalid_image", 422)
             normalized = ImageOps.exif_transpose(opened)
             normalized.load()
-    except UnidentifiedImageError as exc:
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
         raise HybridImageError(
             f"{image.field_name} is not a readable raster image. Use PNG, JPG, or WebP.",
             code="invalid_image",
@@ -544,12 +552,9 @@ def load_data_url(url: str, field_name: str) -> HybridImage:
 
 
 def load_remote_url(url: str, field_name: str) -> HybridImage:
-    request = Request(url, headers={"User-Agent": "axiom-ai-scanner/0.1"})
     try:
-        with urlopen(request, timeout=20) as response:
-            data = response.read(MAX_IMAGE_BYTES + 1)
-            content_type = response.headers.get_content_type()
-    except (HTTPError, URLError, TimeoutError) as exc:
+        data, content_type = download_image(url)
+    except ApiError as exc:
         raise HybridImageError(
             f"Could not load {field_name}_url before uploading it to WaveSpeed.",
             code="image_url_unavailable",
@@ -571,7 +576,7 @@ def load_remote_url(url: str, field_name: str) -> HybridImage:
 def load_local_web_asset(url: str, field_name: str, web_root: Path) -> HybridImage:
     parsed = urlparse(url)
     full_path = (web_root / parsed.path.lstrip("/")).resolve()
-    if not str(full_path).startswith(str(web_root.resolve())) or not full_path.is_file():
+    if web_root.resolve() not in full_path.parents or not full_path.is_file():
         raise HybridImageError(f"{field_name}_url does not point to a local web asset.", "bad_image_url")
 
     content_type = mimetypes.guess_type(str(full_path))[0] or "application/octet-stream"
@@ -591,8 +596,8 @@ def normalize_size(value: str) -> str:
 
     width = int(match.group(1))
     height = int(match.group(2))
-    if not (512 <= width <= 8192 and 512 <= height <= 8192):
-        raise HybridImageError("Size dimensions must be between 512 and 8192.", code="bad_size")
+    if f"{width}*{height}" not in {"1024*1024", "1536*1024", "1024*1536", "2048*2048"}:
+        raise HybridImageError("Choose one of the supported image sizes.", code="bad_size")
     return f"{width}*{height}"
 
 

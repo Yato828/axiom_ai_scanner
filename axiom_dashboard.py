@@ -2,38 +2,20 @@ from __future__ import annotations
 
 import argparse
 import json
-import mimetypes
 import os
 import sys
 import time
 from pathlib import Path
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any
-from urllib.parse import parse_qs, urlparse
 
 from axiom_scanner.analysis.local_ai import explain_ranked_tokens
-from axiom_scanner.analysis.image_generation import ImageGenerationError, generate_meme_image
-from axiom_scanner.analysis.narratives import (
-    generate_narratives,
-    load_og_memecoins,
-    normalize_og_memecoins,
-)
-from axiom_scanner.analysis.wavespeed_hybrid import (
-    HybridImageError,
-    MAX_REQUEST_BYTES as MAX_HYBRID_REQUEST_BYTES,
-    generate_hybrid_image_request,
-)
 from axiom_scanner.analysis.scoring import rank_tokens
 from axiom_scanner.config import ScannerConfig, load_config
 from axiom_scanner.reporting import render_console_report
-from axiom_scanner.sources.dexscreener import DexScreenerSource, resolve_token_image
-
+from axiom_scanner.sources.dexscreener import DexScreenerSource
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = PROJECT_ROOT / "web"
 ALLOWED_CHAINS = ["solana"]
-OG_IMAGE_CACHE: dict[str, str] = {}
-SCAN_CACHE: dict[tuple[str, int], tuple[float, dict[str, Any]]] = {}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -114,12 +96,7 @@ def scan_once(config: ScannerConfig, limit: int) -> list[dict]:
         if any(token_key in seen_tokens for token_key in token_keys):
             continue
         seen_tokens.update(token_keys)
-        image_url = item.snapshot.image_url or _resolve_token_image(
-            config,
-            name=item.snapshot.name,
-            symbol=item.snapshot.symbol,
-        )
-        item.snapshot.image_url = image_url
+        # Keep scanning off the per-token image-search path. The UI has local fallbacks.
         selected_items.append(item)
 
     explanations = explain_ranked_tokens(selected_items)
@@ -187,174 +164,21 @@ def run_watch(args: argparse.Namespace) -> int:
 
 
 def run_web(args: argparse.Namespace) -> int:
-    config_path = args.config
-    chains = args.chain
+    from axiom_scanner.web_runtime import ensure_local_workers
+    from axiom_scanner.web_security import public_origin
+    from axiom_scanner.web_store import get_store
+    from axiom_scanner.webapp import BoundedHTTPServer, DashboardHandler
 
-    class DashboardHandler(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:
-            parsed = urlparse(self.path)
-            if parsed.path == "/api/scan":
-                self._send_scan(parsed.query)
-                return
-            if parsed.path == "/api/og":
-                self._send_og_memecoins()
-                return
-            if parsed.path == "/api/og-image":
-                self._send_og_image(parsed.query)
-                return
-
-            path = "index.html" if parsed.path in ("", "/") else parsed.path.lstrip("/")
-            self._send_static(path)
-
-        def do_POST(self) -> None:
-            parsed = urlparse(self.path)
-            if parsed.path == "/api/narratives":
-                self._send_narratives()
-                return
-            if parsed.path == "/api/generate-image":
-                self._send_generated_image()
-                return
-            if parsed.path == "/api/hybrid-image":
-                self._send_hybrid_image()
-                return
-            self.send_error(404)
-
-        def log_message(self, format: str, *args: object) -> None:
-            # Keep the terminal useful: scans are visible in the browser UI.
-            return
-
-        def _send_scan(self, query: str) -> None:
-            params = parse_qs(query)
-            limit = _parse_int(params.get("limit", [str(args.limit)])[0], args.limit)
-            config = apply_cli_overrides(load_config(config_path), chains)
-            cache_key = (_scan_cache_key(config_path, chains), limit)
-            cached = SCAN_CACHE.get(cache_key)
-            now = time.time()
-            if cached and now - cached[0] < _scan_cache_seconds():
-                payload = cached[1]
-            else:
-                rows = scan_once(config, limit=limit)
-                og_memecoins = load_og_memecoins(PROJECT_ROOT, config.og_memecoins_path)
-                payload = {
-                    "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "count": len(rows),
-                    "min_market_cap_usd": config.min_market_cap_usd,
-                    "tokens": rows,
-                    "og_memecoins": og_memecoins,
-                    "narratives": generate_narratives(rows, og_memecoins, limit=12),
-                }
-                SCAN_CACHE[cache_key] = (now, payload)
-            self._send_json(payload)
-
-        def _send_og_memecoins(self) -> None:
-            config = apply_cli_overrides(load_config(config_path), chains)
-            self._send_json(
-                {
-                    "og_memecoins": load_og_memecoins(
-                        PROJECT_ROOT, config.og_memecoins_path
-                    )
-                }
-            )
-
-        def _send_og_image(self, query: str) -> None:
-            params = parse_qs(query)
-            name = params.get("name", [""])[0]
-            symbol = params.get("symbol", [""])[0]
-            config = apply_cli_overrides(load_config(config_path), chains)
-            image_url = _resolve_og_image(config, name=name, symbol=symbol)
-            self._send_json({"name": name, "symbol": symbol, "image_url": image_url})
-
-        def _send_narratives(self) -> None:
-            try:
-                content_length = _parse_int(self.headers.get("Content-Length", "0"), 0)
-                body = self.rfile.read(min(content_length, 256_000))
-                payload = json.loads(body.decode("utf-8") or "{}")
-                tokens = payload.get("tokens", [])
-                og_memecoins = normalize_og_memecoins(payload.get("og_memecoins", []))
-                limit = _parse_int(str(payload.get("limit", "12")), 12)
-                if not isinstance(tokens, list):
-                    raise ValueError("tokens must be a list")
-                self._send_json(
-                    {
-                        "narratives": generate_narratives(
-                            tokens,
-                            og_memecoins,
-                            limit=limit,
-                        )
-                    }
-                )
-            except (json.JSONDecodeError, ValueError) as exc:
-                self._send_json({"error": str(exc)}, status=400)
-
-        def _send_generated_image(self) -> None:
-            try:
-                content_length = _parse_int(self.headers.get("Content-Length", "0"), 0)
-                body = self.rfile.read(min(content_length, 512_000))
-                payload = json.loads(body.decode("utf-8") or "{}")
-                config = apply_cli_overrides(load_config(config_path), chains)
-                result = generate_meme_image(
-                    payload,
-                    resolve_og_image=lambda name, symbol: _resolve_og_image(
-                        config, name=name, symbol=symbol
-                    ),
-                )
-                self._send_json(result)
-            except ImageGenerationError as exc:
-                self._send_json({"error": str(exc), "code": exc.code}, status=exc.status)
-            except (json.JSONDecodeError, ValueError, TypeError) as exc:
-                self._send_json({"error": str(exc), "code": "bad_request"}, status=400)
-
-        def _send_hybrid_image(self) -> None:
-            try:
-                content_length = _parse_content_length(self.headers.get("Content-Length", "0"))
-                if content_length <= 0:
-                    raise HybridImageError("Request body is empty.", "empty_body")
-                if content_length > MAX_HYBRID_REQUEST_BYTES:
-                    raise HybridImageError(
-                        "Request is too large.",
-                        code="request_too_large",
-                        status=413,
-                    )
-
-                body = self.rfile.read(content_length)
-                result = generate_hybrid_image_request(
-                    self.headers.get("Content-Type", ""),
-                    body,
-                    WEB_ROOT,
-                )
-                self._send_json(result)
-            except HybridImageError as exc:
-                self._send_json({"error": str(exc), "code": exc.code}, status=exc.status)
-            except (ValueError, TypeError) as exc:
-                self._send_json({"error": str(exc), "code": "bad_request"}, status=400)
-
-        def _send_json(self, payload: dict, status: int = 200) -> None:
-            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        def _send_static(self, path: str) -> None:
-            full_path = (WEB_ROOT / path).resolve()
-            if not str(full_path).startswith(str(WEB_ROOT.resolve())) or not full_path.is_file():
-                self.send_error(404)
-                return
-
-            body = full_path.read_bytes()
-            content_type = mimetypes.guess_type(str(full_path))[0] or "application/octet-stream"
-            self.send_response(200)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-    server = ThreadingHTTPServer((args.host, args.port), DashboardHandler)
-    print(f"Dashboard: http://{args.host}:{args.port}")
-    print("Press Ctrl+C to stop.")
+    if args.config:
+        os.environ["AXIOM_CONFIG_PATH"] = str(args.config.resolve())
+    public_origin({"host": f"127.0.0.1:{args.port}"})
+    get_store().ping()
+    if not (WEB_ROOT / "dist" / "launcher.js").is_file():
+        raise RuntimeError("Build the browser bundle first: npm ci && npm run build")
+    server = BoundedHTTPServer((args.host, args.port), DashboardHandler)
+    ensure_local_workers()
+    print(f"Dashboard: http://{args.host}:{args.port}", flush=True)
+    print("Press Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -371,13 +195,6 @@ def _parse_int(value: str, fallback: int) -> int:
         return fallback
 
 
-def _parse_content_length(value: str) -> int:
-    try:
-        return max(int(value), 0)
-    except ValueError:
-        return 0
-
-
 def _token_identity_keys(address: str, symbol: str, name: str) -> set[str]:
     clean_address = (address or "").strip().lower()
     clean_symbol = (symbol or "").strip().lower()
@@ -388,39 +205,6 @@ def _token_identity_keys(address: str, symbol: str, name: str) -> set[str]:
     if clean_address:
         keys.add(f"address:{clean_address}")
     return keys
-
-
-def _scan_cache_key(config_path: Path | None, chains: list[str] | None) -> str:
-    path_key = str(config_path.resolve()) if config_path else "default"
-    chains_key = ",".join(chains or ALLOWED_CHAINS)
-    return f"{path_key}:{chains_key}"
-
-
-def _scan_cache_seconds() -> int:
-    try:
-        return max(int(os.getenv("AXIOM_SCAN_CACHE_SECONDS", "45")), 0)
-    except ValueError:
-        return 45
-
-
-def _resolve_og_image(config: ScannerConfig, name: str, symbol: str) -> str:
-    return _resolve_token_image(config, name=name, symbol=symbol)
-
-
-def _resolve_token_image(config: ScannerConfig, name: str, symbol: str) -> str:
-    key = f"{name.strip().lower()}:{symbol.strip().lower()}"
-    if not key.strip(":"):
-        return ""
-    if key not in OG_IMAGE_CACHE:
-        try:
-            OG_IMAGE_CACHE[key] = resolve_token_image(
-                config=config,
-                name=name,
-                symbol=symbol,
-            )
-        except RuntimeError:
-            OG_IMAGE_CACHE[key] = ""
-    return OG_IMAGE_CACHE[key]
 
 
 def _default_host() -> str:

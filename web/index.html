@@ -16,12 +16,14 @@
             alt="DegenMixer antagonist"
           />
           <div class="brand-copy">
-            <p class="eyebrow">Solana trends + OG meme fusion</p>
+            <p class="eyebrow">Discover. Mix. Launch on Solana.</p>
             <h1>DegenMixer</h1>
           </div>
         </div>
         <div class="topbar-actions">
           <nav class="main-nav" aria-label="DegenMixer links">
+            <a class="nav-link" href="#studio">Mixer</a>
+            <a class="nav-link" href="#launch">Launch token</a>
             <a class="nav-link" href="#tokenomics">Tokenomics</a>
             <a class="icon-link" href="https://x.com/DegenMixerSol" target="_blank" rel="noreferrer" aria-label="DegenMixer on X">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -34,6 +36,7 @@
               </svg>
             </a>
           </nav>
+          <button id="connectWallet" class="secondary-button wallet-button" type="button">Connect wallet</button>
           <div class="status-panel">
             <span class="pulse" aria-hidden="true"></span>
             <span id="statusText">Ready to mix</span>
@@ -44,7 +47,7 @@
       <section class="controls" aria-label="Control panel">
         <label class="control">
           <span>Mix limit</span>
-          <input id="limitInput" type="number" min="1" placeholder="all" value="40" />
+          <input id="limitInput" type="number" min="1" max="200" value="40" />
         </label>
         <label class="control">
           <span>Auto refresh</span>
@@ -183,14 +186,92 @@
             <a id="hybridResultLink" class="ghost-link" href="#" target="_blank" rel="noreferrer" hidden>
               Open
             </a>
+            <button id="useMixForLaunch" class="secondary-button" type="button" hidden>Launch this mix</button>
           </div>
           <div id="hybridResultSlot" class="hybrid-result-slot">
             <span>Waiting for mix</span>
           </div>
         </section>
       </section>
+
+      <section id="launch" class="launch-section" aria-labelledby="launchHeading">
+        <div class="launch-heading">
+          <div>
+            <p class="eyebrow">Your idea. Your token.</p>
+            <h2 id="launchHeading">From a mix to a launch.</h2>
+            <p class="launch-intro">Use your mixed artwork or upload your own. Create your coin on Pump.fun with your Solana wallet.</p>
+          </div>
+          <span class="network-badge"><span class="pulse" aria-hidden="true"></span> Solana mainnet</span>
+        </div>
+        <ol class="launch-steps" aria-label="Launch steps">
+          <li class="active">1 <span>Create your token</span></li>
+          <li>2 <span>Review the details</span></li>
+          <li>3 <span>Confirm in your wallet</span></li>
+        </ol>
+        <div class="launch-layout">
+          <form id="launchForm" class="launch-form">
+            <div class="section-heading"><h3>Token details</h3><button id="restoreDraft" class="text-button" type="button" hidden>Restore draft</button></div>
+            <div class="image-source-actions">
+              <button id="chooseOwnImage" class="secondary-button" type="button">Upload your image</button>
+              <button id="chooseMixedImage" class="secondary-button" type="button" disabled>Use latest mix</button>
+            </div>
+            <label class="launch-image-input" for="launchImage">
+              <img id="launchImagePreview" alt="Token artwork preview" hidden />
+              <span id="launchImageHint">Choose token artwork<span>PNG, JPG or WebP · up to 3 MB</span></span>
+              <input id="launchImage" type="file" accept="image/png,image/jpeg,image/webp" />
+            </label>
+            <div class="launch-field-row">
+              <label class="hybrid-field"><span>Token name <small id="nameCount">0 / 32 bytes</small></span><input id="launchName" name="name" required maxlength="32" placeholder="e.g. Cosmic Bonk" autocomplete="off" /></label>
+              <label class="hybrid-field"><span>Ticker</span><input id="launchSymbol" name="symbol" required maxlength="13" pattern="[A-Za-z0-9]{1,13}" placeholder="e.g. CBONK" autocomplete="off" /></label>
+            </div>
+            <label class="hybrid-field"><span>Description <small>Optional</small></span><textarea id="launchDescription" name="description" rows="4" maxlength="1000" placeholder="Tell people what your token is about."></textarea></label>
+            <details class="launch-socials">
+              <summary>Website & social links <span>Optional</span></summary>
+              <label class="hybrid-field"><span>Website</span><input name="website" type="url" maxlength="256" placeholder="https://your-project.com" /></label>
+              <label class="hybrid-field"><span>X</span><input name="twitter" type="url" maxlength="256" placeholder="https://x.com/yourproject" /></label>
+              <label class="hybrid-field"><span>Telegram</span><input name="telegram" type="url" maxlength="256" placeholder="https://t.me/yourproject" /></label>
+            </details>
+            <div class="draft-actions"><button id="saveDraft" class="text-button" type="button">Save draft on this device</button><button id="downloadDraft" class="text-button" type="button">Download draft</button></div>
+            <p id="launchFormError" class="form-error" role="alert" hidden></p>
+          </form>
+          <aside class="launch-review" aria-label="Token preview and launch review">
+            <p class="eyebrow">Live preview</p>
+            <div class="token-preview-card">
+              <div class="preview-artwork"><img id="reviewImage" alt="Token artwork" hidden /><span id="reviewPlaceholder">✦</span></div>
+              <h3 id="reviewName">Your next big idea</h3>
+              <span id="reviewSymbol" class="preview-ticker">$YOURTOKEN</span>
+              <p id="reviewDescription">Your token story will appear here.</p>
+            </div>
+            <dl class="launch-facts">
+              <div><dt>Launchpad</dt><dd>Pump.fun</dd></div>
+              <div><dt>Network</dt><dd>Solana mainnet</dd></div>
+              <div><dt>Creator wallet</dt><dd id="reviewWallet">Not connected</dd></div>
+              <div><dt>Initial purchase</dt><dd>None</dd></div>
+              <div><dt>Estimated total</dt><dd id="reviewFee">Available after review</dd></div>
+            </dl>
+            <label class="hybrid-field spend-limit"><span>Maximum estimated cost (SOL)</span><input id="maxLaunchCost" type="number" value="0.05" min="0.001" max="1" step="0.001" /><small>Includes estimated network fees and account rent. Review the final transaction in your wallet.</small></label>
+            <label class="launch-consent"><input id="launchConsent" type="checkbox" /><span>I reviewed these details. This launches a real token on mainnet and spends SOL.</span></label>
+            <button id="reviewLaunch" class="primary-button launch-button" type="button">Review launch</button>
+            <button id="confirmLaunch" class="primary-button launch-button" type="button" hidden>Confirm in wallet</button>
+            <button id="checkLaunchStatus" class="secondary-button launch-button" type="button" hidden>Check transaction status</button>
+            <p id="launchStatus" class="launch-status" role="status" aria-live="polite">Loading launch settings…</p>
+            <div id="launchSuccess" class="launch-success" hidden><strong>Your token is live.</strong><a id="pumpTokenLink" target="_blank" rel="noreferrer">View on Pump.fun ↗</a><a id="launchTxLink" target="_blank" rel="noreferrer">View transaction ↗</a></div>
+            <button id="startNewToken" class="secondary-button launch-button" type="button" hidden>Create another token</button>
+            <p class="wallet-note">Every transaction requires your approval in your wallet. DegenMixer never receives your private keys.</p>
+          </aside>
+        </div>
+      </section>
     </main>
 
-    <script src="/app.js"></script>
+    <dialog id="walletDialog" class="wallet-dialog" aria-labelledby="walletDialogTitle">
+      <div class="section-heading"><h2 id="walletDialogTitle">Connect your wallet</h2><button id="closeWalletDialog" class="text-button" type="button" aria-label="Close wallet selection">✕</button></div>
+      <p>Choose a Solana wallet. A sign-in message proves ownership without spending SOL.</p>
+      <button data-wallet="phantom" class="wallet-choice" type="button"><span>◉ Phantom</span><span>Connect ↗</span></button>
+      <button data-wallet="solflare" class="wallet-choice" type="button"><span>☀ Solflare</span><span>Connect ↗</span></button>
+      <p id="walletError" class="form-error" role="alert" hidden></p>
+      <p class="wallet-note">On mobile, open this website in your wallet's browser.</p>
+    </dialog>
+    <script type="module" src="/dist/launcher.js?v=2"></script>
+    <script src="/app.js?v=2" defer></script>
   </body>
 </html>

@@ -1,0 +1,93 @@
+{
+  "source": "@pump-fun/pump-sdk 4.1.0, SOL pair, mayhem/cashback/holder rewards disabled",
+  "metadata": {
+    "name": "Cosmic Bonk",
+    "symbol": "CBONK",
+    "uri": "https://ipfs.io/ipfs/bafybeiexamplemetadata"
+  },
+  "mint": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+  "user": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+  "data": "d6904cec5f8b31b40b000000436f736d696320426f6e6b0500000043424f4e4b2b00000068747470733a2f2f697066732e696f2f697066732f626166796265696578616d706c656d657461646174618139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b3940000000000000000000000",
+  "keys": [
+    {
+      "address": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "signer": true,
+      "writable": true
+    },
+    {
+      "address": "TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "GTSxUuGsx6UyaCAWNjySYx2gLMJr1arNdzcjBnuRoLUV",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "address": "4C1gXP2wEfGSFyagUkQuUp2azGxN3emkxSZ2Cb8d2rwB",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "address": "4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+      "signer": true,
+      "writable": true
+    },
+    {
+      "address": "11111111111111111111111111111111",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "address": "13ec7XdrjF3h3YcqBTFDSReRcUFwbCnJaAQspM4j6DDJ",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "BwWK17cbHxwWBKZkUYvzxLcNQ1YVyaFezduWbtm2de6s",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "address": "Ei7sQLrc15hsxaouTAdQk3its6X7ZGUhBdcvKEaTprZq",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "address": "99WYK12mnZUDQn1jrmrN7LCE4T8wkCJuU2PwjpdWzwhN",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "address": "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "address": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+      "signer": false,
+      "writable": false
+    }
+  ]
+}
