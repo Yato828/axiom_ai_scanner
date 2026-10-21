@@ -3,26 +3,31 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DegenMixer</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <title>DegenMixer — A new state of creation</title>
+    <meta name="theme-color" content="#080808" />
+    <meta name="description" content="Discover the signal. Remix the unexpected. Turn two references into a new idea and launch it on Solana." />
+    <link rel="icon" href="/assets/mascots/avatar.png" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=5" />
   </head>
   <body>
-    <main class="shell">
+    <a class="skip-link" href="#discover">Skip to the workspace</a>
+    <main class="shell" id="top">
       <header class="topbar">
         <div class="brand-lockup">
           <img
-            class="antagonist-mark"
-            src="/assets/degen.png"
-            alt="DegenMixer antagonist"
+            class="mascot-mark"
+            src="/assets/mascots/avatar.png"
+            alt="DegenMixer white Buddha mascot"
+            width="42" height="42"
           />
           <div class="brand-copy">
-            <p class="eyebrow">Discover. Mix. Launch on Solana.</p>
-            <h1>DegenMixer</h1>
+            <a class="wordmark" href="#top" aria-label="DegenMixer home">degenmixer<span aria-hidden="true">✳</span></a>
           </div>
         </div>
         <div class="topbar-actions">
           <nav class="main-nav" aria-label="DegenMixer links">
-            <a class="nav-link" href="#studio">Mixer</a>
+            <a class="nav-link" href="#discover">Discover</a>
+            <a class="nav-link" href="#studio">Mixer studio</a>
             <a class="nav-link" href="#launch">Launch token</a>
             <a class="nav-link" href="#tokenomics">Tokenomics</a>
             <a class="icon-link" href="https://x.com/DegenMixerSol" target="_blank" rel="noreferrer" aria-label="DegenMixer on X">
@@ -37,14 +42,42 @@
             </a>
           </nav>
           <button id="connectWallet" class="secondary-button wallet-button" type="button">Connect wallet</button>
-          <div class="status-panel">
-            <span class="pulse" aria-hidden="true"></span>
-            <span id="statusText">Ready to mix</span>
-          </div>
         </div>
       </header>
 
-      <section class="controls" aria-label="Control panel">
+      <section class="hero" aria-labelledby="heroHeading">
+        <div class="hero-topline"><span><span class="pulse" aria-hidden="true"></span> A new state of creation</span><span>Built on Solana / Open to possibility</span></div>
+        <div class="hero-art" aria-hidden="true">
+          <div id="mindWave"></div>
+          <div class="hero-orbit"></div>
+          <img class="hero-mascot" src="/assets/mascots/hero.png" alt="" width="1122" height="1402" fetchpriority="high" />
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">Less noise. More imagination.</p>
+          <h1 id="heroHeading">Find the signal.<br />Create the <em>unexpected.</em></h1>
+          <p class="hero-description">A space for your next big idea. Discover on-chain trends, mix meme DNA, and bring something new to life.</p>
+          <div class="hero-actions">
+            <a class="primary-button link-button" href="#discover">Explore the feed <span aria-hidden="true">↗</span></a>
+            <a class="hero-secondary" href="#studio">Enter the studio <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+        <div class="hero-bottomline"><span>Curiosity is the first step.</span><a href="#discover">Scroll to explore <span aria-hidden="true">↓</span></a><span class="hero-coordinate">[ 01 — ∞ ]</span></div>
+        <button class="motion-toggle" id="motionToggle" type="button" aria-pressed="false" aria-label="Pause background animation">Pause motion <span aria-hidden="true">Ⅱ</span></button>
+      </section>
+
+      <nav class="journey" aria-label="Your creative journey">
+        <a href="#discover"><span class="journey-number">01 /</span><span><strong>Discover the signal</strong><small>Find what moves the culture.</small></span><span aria-hidden="true">↗</span></a>
+        <a href="#studio"><span class="journey-number">02 /</span><span><strong>Mix a new perspective</strong><small>Two references. Infinite possibilities.</small></span><span aria-hidden="true">↗</span></a>
+        <a href="#launch"><span class="journey-number">03 /</span><span><strong>Make it real</strong><small>Your idea, live on Solana.</small></span><span aria-hidden="true">↗</span></a>
+      </nav>
+
+      <section id="discover" class="workspace-section" aria-labelledby="discoverHeading">
+      <div class="editorial-heading">
+        <div><p class="eyebrow">01 / The discovery room</p><h2 id="discoverHeading">A world of noise.<br /><em>A different perspective.</em></h2></div>
+        <div class="heading-aside"><p>Fresh trends. Familiar icons.<br />The beginning of something original.</p><div class="status-panel" role="status"><span class="pulse" aria-hidden="true"></span><span id="statusText">Ready to mix</span></div></div>
+      </div>
+      <div class="feed-toolbar"><span class="toolbar-label">Your creative radar <span aria-hidden="true">↙</span></span>
+      <div class="controls" aria-label="Control panel">
         <label class="control">
           <span>Mix limit</span>
           <input id="limitInput" type="number" min="1" max="200" value="40" />
@@ -59,26 +92,7 @@
           </select>
         </label>
         <button id="scanButton" class="primary-button" type="button">Remix feed</button>
-      </section>
-
-      <section id="tokenomics" class="tokenomics-panel" aria-label="Tokenomics">
-        <div>
-          <span class="summary-label">Supply</span>
-          <strong>1B</strong>
-        </div>
-        <div>
-          <span class="summary-label">Tax</span>
-          <strong>0%</strong>
-        </div>
-        <div>
-          <span class="summary-label">Ticker</span>
-          <strong>$DEGMIX</strong>
-        </div>
-        <div>
-          <span class="summary-label">Chain</span>
-          <strong>Solana</strong>
-        </div>
-      </section>
+      </div></div>
 
       <section class="summary" aria-label="Mix summary">
         <div>
@@ -99,10 +113,11 @@
         <aside class="meme-panel">
           <div class="panel-heading">
             <p class="eyebrow">OG vault</p>
-            <h2>Meme coins to mix</h2>
+            <h3>Meme coins to mix</h3>
           </div>
           <textarea
             id="ogInput"
+            aria-label="OG meme coins to mix"
             spellcheck="false"
             placeholder="Pudgy Penguins,PENGU&#10;Bonk,BONK&#10;Official Trump,TRUMP"
           ></textarea>
@@ -117,26 +132,30 @@
 
         <section class="narrative-panel">
           <div class="section-heading">
-            <h2>Degen narrative drafts</h2>
+            <h3>Narrative drafts</h3>
             <span id="narrativeCount">0</span>
           </div>
-          <div id="narrativeGrid" class="narrative-grid"></div>
+          <div id="narrativeGrid" class="narrative-grid"><div class="narrative-empty"><span class="empty-orbit" aria-hidden="true">✳</span><h3>Every idea starts somewhere.</h3><p>Your narrative drafts will appear here when the market feed is ready. You can also head straight to the studio.</p><a class="ghost-link" href="#studio">Open mixer studio <span aria-hidden="true">↗</span></a></div></div>
         </section>
       </section>
 
       <section id="tokenGrid" class="results-stack" aria-live="polite"></section>
 
       <section id="emptyState" class="empty-state" hidden>
+        <span class="empty-index" aria-hidden="true">[ Awaiting a signal ]</span>
         <h2>No tokens match the current mix</h2>
-        <p>Try raising the limit or loosening the settings in config.json.</p>
+        <p>Try refreshing the feed or increasing the mix limit.</p>
+      </section>
       </section>
 
-      <section id="studio" class="hybrid-layout" aria-label="DegenMixer token image generator">
+      <section id="studio" class="workspace-section" aria-labelledby="studioHeading">
+        <div class="editorial-heading"><div><p class="eyebrow">02 / The mixer studio</p><h2 id="studioHeading">Different worlds.<br /><em>One new possibility.</em></h2></div><p class="heading-aside">Bring two references and a little curiosity.<br />Let your next character take shape.</p></div>
+      <div class="hybrid-layout" aria-label="DegenMixer token image generator">
         <form id="hybridForm" class="hybrid-panel">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Mixer studio</p>
-              <h2>Token image mix</h2>
+              <p class="eyebrow">The ingredients</p>
+              <h3>Token image mix</h3>
             </div>
             <span id="hybridStatus">Ready</span>
           </div>
@@ -147,12 +166,14 @@
           <div class="hybrid-reference-grid">
             <label class="hybrid-upload">
               <span id="imageALabel">Image A</span>
+              <span class="upload-symbol" aria-hidden="true">＋</span>
               <input id="imageAFile" name="image_a" type="file" accept="image/*" />
               <img id="imageAPreview" alt="" hidden />
             </label>
 
             <label class="hybrid-upload">
               <span id="imageBLabel">Image B</span>
+              <span class="upload-symbol" aria-hidden="true">＋</span>
               <input id="imageBFile" name="image_b" type="file" accept="image/*" />
               <img id="imageBPreview" alt="" hidden />
             </label>
@@ -182,23 +203,24 @@
 
         <section class="hybrid-result-panel" aria-live="polite">
           <div class="section-heading">
-            <h2>Mix result</h2>
+            <h3>Mix result</h3>
             <a id="hybridResultLink" class="ghost-link" href="#" target="_blank" rel="noreferrer" hidden>
               Open
             </a>
             <button id="useMixForLaunch" class="secondary-button" type="button" hidden>Launch this mix</button>
           </div>
           <div id="hybridResultSlot" class="hybrid-result-slot">
-            <span>Waiting for mix</span>
+            <div class="result-placeholder"><img src="/assets/mascots/studio.png" alt="" width="200" height="200" loading="lazy" /><span class="eyebrow">A moment of possibility</span><h3>Something new<br />is taking shape.</h3><p>Your creation will appear here.</p></div>
           </div>
         </section>
+      </div>
       </section>
 
       <section id="launch" class="launch-section" aria-labelledby="launchHeading">
         <div class="launch-heading">
           <div>
-            <p class="eyebrow">Your idea. Your token.</p>
-            <h2 id="launchHeading">From a mix to a launch.</h2>
+            <p class="eyebrow">03 / The next chapter</p>
+            <h2 id="launchHeading">An idea is only<br /><em>the beginning.</em></h2>
             <p class="launch-intro">Use your mixed artwork or upload your own. Create your coin on Pump.fun with your Solana wallet.</p>
           </div>
           <span class="network-badge"><span class="pulse" aria-hidden="true"></span> Solana mainnet</span>
@@ -237,7 +259,7 @@
           <aside class="launch-review" aria-label="Token preview and launch review">
             <p class="eyebrow">Live preview</p>
             <div class="token-preview-card">
-              <div class="preview-artwork"><img id="reviewImage" alt="Token artwork" hidden /><span id="reviewPlaceholder">✦</span></div>
+              <div class="preview-artwork"><img id="reviewImage" alt="Token artwork" hidden /><span id="reviewPlaceholder"><img src="/assets/mascots/avatar.png" alt="White Buddha mascot" width="136" height="136" loading="lazy" /></span></div>
               <h3 id="reviewName">Your next big idea</h3>
               <span id="reviewSymbol" class="preview-ticker">$YOURTOKEN</span>
               <p id="reviewDescription">Your token story will appear here.</p>
@@ -261,6 +283,17 @@
           </aside>
         </div>
       </section>
+
+      <section id="tokenomics" class="tokenomics-section" aria-labelledby="tokenomicsHeading">
+        <div class="tokenomics-intro"><p class="eyebrow">The foundation</p><h2 id="tokenomicsHeading">Clear by design.</h2><p>A little more transparency. A little less noise.</p></div>
+        <div class="tokenomics-panel"><div><span class="summary-label">01 / Supply</span><strong>1B</strong></div><div><span class="summary-label">02 / Tax</span><strong>0%</strong></div><div><span class="summary-label">03 / Ticker</span><strong>$DEGMIX</strong></div><div><span class="summary-label">04 / Chain</span><strong>Solana</strong></div></div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="footer-brand"><img class="mascot-mark" src="/assets/mascots/avatar.png" alt="White Buddha mascot" width="42" height="42" loading="lazy" /><div><a class="wordmark" href="#top">degenmixer<span aria-hidden="true">✳</span></a><p>Stay curious. Create something unexpected.</p></div></div>
+        <div class="footer-links"><a href="https://x.com/DegenMixerSol" target="_blank" rel="noreferrer">X / Twitter ↗</a><a href="https://t.me/DegenMixer" target="_blank" rel="noreferrer">Telegram ↗</a><a href="#top">Back to the top ↑</a></div>
+        <div class="footer-bottom"><span>Discover. Mix. Launch.</span><span>Made for the beautifully unexpected.</span><span>Solana mainnet</span></div>
+      </footer>
     </main>
 
     <dialog id="walletDialog" class="wallet-dialog" aria-labelledby="walletDialogTitle">
@@ -273,5 +306,7 @@
     </dialog>
     <script type="module" src="/dist/launcher.js?v=2"></script>
     <script src="/app.js?v=2" defer></script>
+    <script src="/assets/fonts/adelphe-font.js" defer></script>
+    <script src="/experience.js?v=4" defer></script>
   </body>
 </html>
