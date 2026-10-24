@@ -35,7 +35,7 @@ export function encodeBase58(bytes) {
 
 export function readPending(storage, wallet) {
   try {
-    const value = JSON.parse(storage.getItem(`degenmixer:pending:${wallet}`));
+    const value = JSON.parse(storage.getItem(`memorphia:pending:${wallet}`));
     if (value && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value.mint) && /^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(value.signature)) return value;
   } catch { /* Device storage can be unavailable or contain an old draft. */ }
   return null;

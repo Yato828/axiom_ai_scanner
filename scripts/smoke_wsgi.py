@@ -31,11 +31,11 @@ def base58(data):
 
 def main():
     runtime = os.environ.copy()
-    runtime.update(AXIOM_ENV="development", REDIS_URL="", AXIOM_PUBLIC_ORIGIN=ORIGIN)
+    runtime.update(MEMORPHIA_ENV="development", REDIS_URL="", MEMORPHIA_PUBLIC_ORIGIN=ORIGIN)
     process = subprocess.Popen(
         [
             str(Path(sys.executable).with_name("gunicorn")),
-            "axiom_scanner.web_wsgi:app",
+            "memorphia_scanner.web_wsgi:app",
             "--bind",
             "127.0.0.1:8081",
             "--workers",

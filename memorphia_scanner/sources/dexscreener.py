@@ -6,10 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from urllib.parse import quote_plus
 
-from axiom_scanner.config import ScannerConfig
-from axiom_scanner.http_client import HttpClient
-from axiom_scanner.models import TokenSnapshot
-from axiom_scanner.sources.base import TokenSource
+from memorphia_scanner.config import ScannerConfig
+from memorphia_scanner.http_client import HttpClient
+from memorphia_scanner.models import TokenSnapshot
+from memorphia_scanner.sources.base import TokenSource
 
 
 class DexScreenerSource(TokenSource):

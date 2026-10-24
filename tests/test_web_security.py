@@ -14,17 +14,17 @@ from unittest.mock import patch
 from nacl.signing import SigningKey
 from PIL import Image
 
-from axiom_scanner.launch import validate_metadata
-from axiom_scanner.safe_images import download_image, normalize_image
-from axiom_scanner.web_runtime import (
+from memorphia_scanner.launch import validate_metadata
+from memorphia_scanner.safe_images import download_image, normalize_image
+from memorphia_scanner.web_runtime import (
     enqueue_generation,
     public_job,
     refresh_scan,
     scan_payload,
 )
-from axiom_scanner.web_security import BASE58, ApiError, decode_address
-from axiom_scanner.web_store import MemoryStore, get_store
-from axiom_scanner.webapp import MAX_BODY, Request, application
+from memorphia_scanner.web_security import BASE58, ApiError, decode_address
+from memorphia_scanner.web_store import MemoryStore, get_store
+from memorphia_scanner.webapp import MAX_BODY, Request, application
 
 
 def base58(data):
@@ -40,10 +40,10 @@ class WebSecurityTests(unittest.TestCase):
         self.env = patch.dict(
             os.environ,
             {
-                "AXIOM_ENV": "development",
+                "MEMORPHIA_ENV": "development",
                 "REDIS_URL": "",
-                "AXIOM_PUBLIC_ORIGIN": "",
-                "AXIOM_TRUST_PROXY": "0",
+                "MEMORPHIA_PUBLIC_ORIGIN": "",
+                "MEMORPHIA_TRUST_PROXY": "0",
             },
         )
         self.env.start()
@@ -133,7 +133,7 @@ class WebSecurityTests(unittest.TestCase):
 
     def test_rpc_does_not_allow_arbitrary_methods(self):
         _, headers = self.sign_in()
-        with patch("axiom_scanner.launch.urlopen") as upstream:
+        with patch("memorphia_scanner.launch.urlopen") as upstream:
             response = self.request(
                 "/api/rpc", {"method": "getProgramAccounts", "params": []}, headers
             )
@@ -188,7 +188,7 @@ class WebSecurityTests(unittest.TestCase):
 
     def test_production_requires_shared_state(self):
         get_store.cache_clear()
-        with patch.dict(os.environ, {"AXIOM_ENV": "production", "REDIS_URL": ""}):
+        with patch.dict(os.environ, {"MEMORPHIA_ENV": "production", "REDIS_URL": ""}):
             with self.assertRaises(RuntimeError):
                 get_store()
 
@@ -203,10 +203,10 @@ class WebSecurityTests(unittest.TestCase):
         with (
             patch.dict(os.environ, {"SOLANA_RPC_URL": "https://rpc.example/SECRET"}),
             patch(
-                "axiom_scanner.launch.urlopen", side_effect=OSError("secret failure")
+                "memorphia_scanner.launch.urlopen", side_effect=OSError("secret failure")
             ),
         ):
-            with self.assertLogs("axiom_scanner.webapp", level="ERROR"):
+            with self.assertLogs("memorphia_scanner.webapp", level="ERROR"):
                 response = self.request(
                     "/api/rpc", {"method": "getGenesisHash", "params": []}, headers
                 )
@@ -214,7 +214,7 @@ class WebSecurityTests(unittest.TestCase):
             self.assertNotIn(b"SECRET", response.body)
             self.assertNotIn(b"secret failure", response.body)
 
-    @patch("axiom_scanner.web_runtime.ensure_local_workers")
+    @patch("memorphia_scanner.web_runtime.ensure_local_workers")
     def test_authenticated_generation_runs_as_a_private_job(self, workers):
         _, headers = self.sign_in()
         with patch.dict(os.environ, {"WAVESPEED_API_KEY": "test-only-not-a-real-key"}):
@@ -226,10 +226,10 @@ class WebSecurityTests(unittest.TestCase):
         self.assertEqual(response.status, 202, response.body)
         job_id = json.loads(response.body)["job_id"]
         with patch(
-            "axiom_scanner.analysis.wavespeed_hybrid.generate_hybrid_image_request",
+            "memorphia_scanner.analysis.wavespeed_hybrid.generate_hybrid_image_request",
             return_value={"output_url": "https://example.com/image.png"},
         ):
-            from axiom_scanner.web_runtime import execute_job
+            from memorphia_scanner.web_runtime import execute_job
 
             execute_job(job_id)
         response = self.request("/api/jobs/" + job_id, headers=headers, method="GET")
@@ -256,7 +256,7 @@ class ImageAndMetadataTests(unittest.TestCase):
             records = [(2, 1, 6, "", (address, 443)) for address in addresses]
             with (
                 patch("socket.getaddrinfo", return_value=records),
-                patch("axiom_scanner.safe_images.PinnedHTTPSConnection") as connection,
+                patch("memorphia_scanner.safe_images.PinnedHTTPSConnection") as connection,
             ):
                 with self.assertRaises(ApiError):
                     download_image("https://example.com/image.png")
@@ -277,10 +277,10 @@ class ImageAndMetadataTests(unittest.TestCase):
         response.getheader.return_value = "https://127.0.0.1/image.png"
         with (
             patch(
-                "axiom_scanner.safe_images.public_addresses",
+                "memorphia_scanner.safe_images.public_addresses",
                 side_effect=[["93.184.216.34"], ApiError("private")],
             ),
-            patch("axiom_scanner.safe_images.PinnedHTTPSConnection") as connection,
+            patch("memorphia_scanner.safe_images.PinnedHTTPSConnection") as connection,
         ):
             connection.return_value.getresponse.return_value = response
             with self.assertRaises(ApiError):
@@ -318,7 +318,7 @@ class RuntimeConcurrencyTests(unittest.TestCase):
     def setUp(self):
         self.env = patch.dict(
             os.environ,
-            {"AXIOM_ENV": "development", "REDIS_URL": "", "AXIOM_CONFIG_PATH": ""},
+            {"MEMORPHIA_ENV": "development", "REDIS_URL": "", "MEMORPHIA_CONFIG_PATH": ""},
         )
         self.env.start()
         get_store.cache_clear()
@@ -327,7 +327,7 @@ class RuntimeConcurrencyTests(unittest.TestCase):
         get_store.cache_clear()
         self.env.stop()
 
-    @patch("axiom_scanner.web_runtime.ensure_local_workers")
+    @patch("memorphia_scanner.web_runtime.ensure_local_workers")
     def test_scans_with_different_limits_share_one_snapshot(self, workers):
         get_store().set(
             "scan:result",
@@ -346,7 +346,7 @@ class RuntimeConcurrencyTests(unittest.TestCase):
             release.wait(3)
             return []
 
-        with patch("axiom_dashboard.scan_once", side_effect=scan) as scanner:
+        with patch("memorphia_dashboard.scan_once", side_effect=scan) as scanner:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 first = pool.submit(refresh_scan)
                 self.assertTrue(started.wait(1))
@@ -356,7 +356,7 @@ class RuntimeConcurrencyTests(unittest.TestCase):
                 first.result(timeout=3)
             self.assertEqual(scanner.call_count, 1)
 
-    @patch("axiom_scanner.web_runtime.ensure_local_workers")
+    @patch("memorphia_scanner.web_runtime.ensure_local_workers")
     def test_duplicate_generation_is_queued_once_and_owned_by_wallet(self, workers):
         with ThreadPoolExecutor(max_workers=10) as pool:
             jobs = list(

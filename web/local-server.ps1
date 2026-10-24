@@ -85,7 +85,7 @@ function Get-FallbackTokens {
           ([double]$item.change) `
           ([int]$item.txns) `
           ([double]$item.age) `
-          ("$($item.theme) momentum on Solana meme watchlist. Local DegenMixer fallback entry with image asset.")
+          ("$($item.theme) momentum on Solana meme watchlist. Local Memorphia fallback entry with image asset.")
       }
       return @(Select-UniqueTokens $rows)
     } catch {}
@@ -341,14 +341,14 @@ while ($true) {
       }
       $name = if ($payload.narrative.name) { $payload.narrative.name } else { 'Solana meme remix' }
       $ticker = if ($payload.narrative.ticker) { $payload.narrative.ticker } else { 'MEME' }
-      $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><rect width='1024' height='1024' fill='#090615'/><circle cx='820' cy='180' r='190' fill='#a855f7' opacity='.78'/><circle cx='180' cy='820' r='240' fill='#f15bb5' opacity='.65'/><rect x='112' y='256' width='800' height='512' rx='42' fill='#171027' stroke='#34224e' stroke-width='6'/><text x='512' y='430' text-anchor='middle' font-family='Arial' font-size='58' font-weight='900' fill='#fbf7ff'>$ticker</text><text x='512' y='535' text-anchor='middle' font-family='Arial' font-size='34' font-weight='800' fill='#67e8f9'>DEGENMIXER REMIX</text><text x='512' y='625' text-anchor='middle' font-family='Arial' font-size='30' font-weight='700' fill='#e8ddf4'>$name</text></svg>"
+      $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><rect width='1024' height='1024' fill='#090615'/><circle cx='820' cy='180' r='190' fill='#a855f7' opacity='.78'/><circle cx='180' cy='820' r='240' fill='#f15bb5' opacity='.65'/><rect x='112' y='256' width='800' height='512' rx='42' fill='#171027' stroke='#34224e' stroke-width='6'/><text x='512' y='430' text-anchor='middle' font-family='Arial' font-size='58' font-weight='900' fill='#fbf7ff'>$ticker</text><text x='512' y='535' text-anchor='middle' font-family='Arial' font-size='34' font-weight='800' fill='#67e8f9'>MEMORPHIA REMIX</text><text x='512' y='625' text-anchor='middle' font-family='Arial' font-size='30' font-weight='700' fill='#e8ddf4'>$name</text></svg>"
       Send-Json $stream @{ image_data_url = "data:image/svg+xml;charset=utf-8,$([Uri]::EscapeDataString($svg))" }
       continue
     }
 
     if ($method -eq 'POST' -and $path -eq '/api/hybrid-image') {
       Send-Json $stream @{
-        error = 'DegenMixer Studio uses the Python backend. Start it with: python axiom_dashboard.py web --port 8080'
+        error = 'Memorphia Studio uses the Python backend. Start it with: python memorphia_dashboard.py web --port 8080'
         code = 'python_backend_required'
       } 501
       continue

@@ -3,19 +3,19 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from axiom_scanner.analysis.image_generation import (
+from memorphia_scanner.analysis.image_generation import (
     ImageGenerationError,
     get_openai_api_keys,
     should_try_next_openai_key,
 )
-from axiom_scanner.analysis.narratives import generate_narratives, normalize_og_memecoins
-from axiom_scanner.analysis.scoring import rank_tokens
-from axiom_scanner.analysis.wavespeed_hybrid import HybridImageError, should_try_next_key
-from axiom_scanner.analysis.wavespeed_hybrid import rotated_wavespeed_api_keys
-from axiom_scanner.config import ScannerConfig
-from axiom_scanner.models import TokenSnapshot
-from axiom_scanner.sources.dexscreener import _passes_basic_filters
-from axiom_dashboard import _token_identity_keys
+from memorphia_scanner.analysis.narratives import generate_narratives, normalize_og_memecoins
+from memorphia_scanner.analysis.scoring import rank_tokens
+from memorphia_scanner.analysis.wavespeed_hybrid import HybridImageError, should_try_next_key
+from memorphia_scanner.analysis.wavespeed_hybrid import rotated_wavespeed_api_keys
+from memorphia_scanner.config import ScannerConfig
+from memorphia_scanner.models import TokenSnapshot
+from memorphia_scanner.sources.dexscreener import _passes_basic_filters
+from memorphia_dashboard import _token_identity_keys
 
 
 class ScoringTests(unittest.TestCase):
@@ -93,8 +93,8 @@ class ScoringTests(unittest.TestCase):
 
     def test_narrative_generator_blends_trend_with_og_token(self) -> None:
         trend = {
-            "token": "AXIOM",
-            "name": "Axiom Trend",
+            "token": "MMORPH",
+            "name": "Memorphia Trend",
             "signal": "HOT",
             "score": 88.2,
             "market_cap": 1_200_000,

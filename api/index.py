@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
-from axiom_scanner.webapp import DashboardHandler
+from memorphia_scanner.webapp import DashboardHandler
 
 
 class handler(DashboardHandler):

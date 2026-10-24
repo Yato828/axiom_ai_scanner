@@ -95,7 +95,7 @@ class RedisStore:
 
     @staticmethod
     def key(key):
-        return "degenmixer:{v1}:" + key
+        return "memorphia:{v1}:" + key
 
     def get(self, key):
         return self.client.get(self.key(key))
@@ -150,7 +150,7 @@ class RedisStore:
 
 
 def production():
-    return os.getenv("AXIOM_ENV", "development") == "production"
+    return os.getenv("MEMORPHIA_ENV", "development") == "production"
 
 
 @lru_cache(maxsize=1)

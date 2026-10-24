@@ -13,7 +13,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out
 function Get-Json {
   param([string]$Url)
   try {
-    return Invoke-RestMethod -Uri $Url -Headers @{ 'User-Agent' = 'AxiomMemeLab/1.0' } -TimeoutSec 15
+    return Invoke-RestMethod -Uri $Url -Headers @{ 'User-Agent' = 'Memorphia/1.0' } -TimeoutSec 15
   } catch {
     return $null
   }

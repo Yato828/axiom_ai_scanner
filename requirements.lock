@@ -3,12 +3,12 @@
 cffi==2.1.1
     # via pynacl
 gunicorn==26.2.0
-    # via axiom-ai-scanner (pyproject.toml)
+    # via memorphia (pyproject.toml)
 pillow==12.3.0
-    # via axiom-ai-scanner (pyproject.toml)
+    # via memorphia (pyproject.toml)
 pycparser==3.11
     # via cffi
 pynacl==1.6.2
-    # via axiom-ai-scanner (pyproject.toml)
+    # via memorphia (pyproject.toml)
 redis==7.4.1
-    # via axiom-ai-scanner (pyproject.toml)
+    # via memorphia (pyproject.toml)

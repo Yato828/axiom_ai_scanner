@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm ci && npm run build",
-  "env": { "AXIOM_ENV": "production", "AXIOM_TRUST_PROXY": "1" },
+  "env": { "MEMORPHIA_ENV": "production", "MEMORPHIA_TRUST_PROXY": "1" },
   "rewrites": [
     { "source": "/:path*", "destination": "/api/index?route=:path*" }
   ]

@@ -14,14 +14,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from axiom_scanner.analysis.narratives import (
+from memorphia_scanner.analysis.narratives import (
     generate_narratives,
     load_og_memecoins,
     normalize_og_memecoins,
 )
-from axiom_scanner.launch import launch_config, publish_metadata, rpc_request
-from axiom_scanner.safe_images import download_image, normalize_image
-from axiom_scanner.web_runtime import (
+from memorphia_scanner.launch import launch_config, publish_metadata, rpc_request
+from memorphia_scanner.safe_images import download_image, normalize_image
+from memorphia_scanner.web_runtime import (
     ROOT,
     enqueue_generation,
     generation_features,
@@ -29,7 +29,7 @@ from axiom_scanner.web_runtime import (
     runtime_config,
     scan_payload,
 )
-from axiom_scanner.web_security import (
+from memorphia_scanner.web_security import (
     ApiError,
     capacity_gate,
     check_origin,
@@ -41,7 +41,7 @@ from axiom_scanner.web_security import (
     session_key,
     verify_challenge,
 )
-from axiom_scanner.web_store import get_store
+from memorphia_scanner.web_store import get_store
 
 WEB_ROOT = ROOT / "web"
 MAX_BODY = (
@@ -279,7 +279,7 @@ def route(request):
                     503,
                 )
             rate_limit(wallet, "metadata", 3, 300)
-            from axiom_scanner.analysis.wavespeed_hybrid import parse_multipart
+            from memorphia_scanner.analysis.wavespeed_hybrid import parse_multipart
 
             fields, files = parse_multipart(
                 headers.get("content-type", ""), request.body
@@ -325,7 +325,7 @@ def route(request):
             rate_limit(
                 "global",
                 "generation_budget",
-                int(os.getenv("AXIOM_GENERATION_HOURLY_LIMIT", "100")),
+                int(os.getenv("MEMORPHIA_GENERATION_HOURLY_LIMIT", "100")),
                 3600,
             )
             kind = "hybrid" if path.endswith("hybrid-image") else "image"
@@ -353,7 +353,7 @@ def application(request):
         if exc.status in {429, 503}:
             response.headers["Retry-After"] = "30"
     except Exception as exc:
-        from axiom_scanner.analysis.wavespeed_hybrid import HybridImageError
+        from memorphia_scanner.analysis.wavespeed_hybrid import HybridImageError
 
         if isinstance(exc, HybridImageError):
             response = json_response({"error": str(exc), "code": exc.code}, exc.status)
@@ -371,13 +371,13 @@ def application(request):
                 503,
             )
     response.headers.update(SECURITY_HEADERS)
-    if os.getenv("AXIOM_PUBLIC_ORIGIN", "").startswith("https:"):
+    if os.getenv("MEMORPHIA_PUBLIC_ORIGIN", "").startswith("https:"):
         response.headers["Strict-Transport-Security"] = "max-age=31536000"
     return response
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "DegenMixer"
+    server_version = "Memorphia"
     sys_version = ""
 
     def setup(self):

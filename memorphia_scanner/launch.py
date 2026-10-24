@@ -11,8 +11,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-from axiom_scanner.safe_images import normalize_image
-from axiom_scanner.web_security import ApiError
+from memorphia_scanner.safe_images import normalize_image
+from memorphia_scanner.web_security import ApiError
 
 PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 MAINNET_GENESIS = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
@@ -77,7 +77,7 @@ def validate_metadata(payload):
 
 
 def launch_config():
-    enabled = os.getenv("AXIOM_LAUNCH_ENABLED", "1") == "1"
+    enabled = os.getenv("MEMORPHIA_LAUNCH_ENABLED", "1") == "1"
     storage = bool(os.getenv("PINATA_JWT", "").strip())
     rpc = bool(os.getenv("SOLANA_RPC_URL", "").strip())
     return {
@@ -100,7 +100,7 @@ def pin_file(data, filename, content_type):
         raise ApiError(
             "Token image hosting is not configured yet.", "storage_unavailable", 503
         )
-    boundary = "degenmixer-" + uuid.uuid4().hex
+    boundary = "memorphia-" + uuid.uuid4().hex
     body = (
         (
             f'--{boundary}\r\nContent-Disposition: form-data; name="network"\r\n\r\npublic\r\n'

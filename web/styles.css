@@ -57,6 +57,7 @@ input[type=checkbox] { accent-color: var(--text); flex-shrink: 0; }
 .icon-link { display: grid; place-items: center; width: 24px; height: 36px; color: #aaa9a3; }
 .icon-link:hover { color: var(--text); }
 .icon-link svg { width: 14px; height: 14px; fill: currentColor; }
+.social-placeholder { opacity: .55; cursor: default; }
 .primary-button, .secondary-button, .ghost-link, .hybrid-studio-button, .copy-button, .card-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 18px; min-height: 44px; border: 1px solid var(--line); border-radius: 4px; padding: 11px 19px; font-size: 12px; font-weight: 550; line-height: 1.5; text-decoration: none; transition: background .2s, border-color .2s, color .2s; }
 .primary-button { border-color: var(--text); background: var(--text); color: var(--ink); }
 .primary-button:hover:not(:disabled) { background: #fff; border-color: #fff; }

@@ -92,7 +92,6 @@ test('reduced motion uses original artwork and the three mascot variants retain 
     expect(sample.corner, sample.variant).toBe(0);
     expect(sample.character, sample.variant).toBeGreaterThan(240);
   }
-  expect(await page.evaluate(() => [...document.images].every(image => !/degen(?:-mage-antagonist)?\.png/.test(image.src)))).toBeTruthy();
 });
 
 test('the redesigned feed still refreshes, mixes narratives and fills studio references', async ({ page }) => {

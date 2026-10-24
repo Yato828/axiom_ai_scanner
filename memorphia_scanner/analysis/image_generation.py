@@ -225,7 +225,7 @@ def _extract_image_base64(response: dict[str, Any]) -> str:
 
 
 def url_to_data_url(url: str, timeout_seconds: int = 15) -> str:
-    request = Request(url, headers={"User-Agent": "axiom-ai-scanner/0.1"})
+    request = Request(url, headers={"User-Agent": "memorphia/0.1"})
     with urlopen(request, timeout=timeout_seconds) as response:
         body = response.read()
         content_type = response.headers.get_content_type()

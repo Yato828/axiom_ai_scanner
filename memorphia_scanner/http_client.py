@@ -21,7 +21,7 @@ class HttpClient:
                     url,
                     headers={
                         "Accept": "application/json",
-                        "User-Agent": "axiom-ai-scanner/0.1",
+                        "User-Agent": "memorphia/0.1",
                     },
                 )
                 with urlopen(request, timeout=self.timeout_seconds) as response:

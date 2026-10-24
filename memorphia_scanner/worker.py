@@ -5,11 +5,11 @@ import os
 import signal
 import threading
 
-from axiom_scanner.web_runtime import ROOT, generation_loop, heartbeat_loop, market_loop
+from memorphia_scanner.web_runtime import ROOT, generation_loop, heartbeat_loop, market_loop
 
 
 def main():
-    from axiom_dashboard import _load_env_file
+    from memorphia_dashboard import _load_env_file
 
     _load_env_file(ROOT / ".env")
     if not os.getenv("REDIS_URL"):
@@ -22,7 +22,7 @@ def main():
         threading.Thread(target=market_loop, args=(stop,)),
         threading.Thread(target=heartbeat_loop, args=(stop,)),
     ]
-    for _ in range(min(max(int(os.getenv("AXIOM_GENERATION_WORKERS", "2")), 1), 8)):
+    for _ in range(min(max(int(os.getenv("MEMORPHIA_GENERATION_WORKERS", "2")), 1), 8)):
         threads.append(threading.Thread(target=generation_loop, args=(stop,)))
     for thread in threads:
         thread.start()

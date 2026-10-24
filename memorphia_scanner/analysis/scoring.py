@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import math
 
-from axiom_scanner.config import ScannerConfig
-from axiom_scanner.models import RankedToken, TokenSnapshot
+from memorphia_scanner.config import ScannerConfig
+from memorphia_scanner.models import RankedToken, TokenSnapshot
 
 
 def rank_tokens(

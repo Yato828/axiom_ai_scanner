@@ -19,8 +19,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import unquote_to_bytes, urlparse
 from urllib.request import Request, urlopen
-from axiom_scanner.safe_images import download_image
-from axiom_scanner.web_security import ApiError
+from memorphia_scanner.safe_images import download_image
+from memorphia_scanner.web_security import ApiError
 
 
 WAVESPEED_BASE_URL = "https://api.wavespeed.ai/api/v3"
@@ -792,7 +792,7 @@ def submit_timeout_seconds() -> int:
 
 def log_hybrid_event(event: str, **fields: object) -> None:
     try:
-        log_dir = Path(os.getenv("AXIOM_LOG_DIR", "logs"))
+        log_dir = Path(os.getenv("MEMORPHIA_LOG_DIR", "logs"))
         log_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
         safe_fields = " ".join(

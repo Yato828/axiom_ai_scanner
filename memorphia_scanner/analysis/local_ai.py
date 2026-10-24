@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from axiom_scanner.models import RankedToken
+from memorphia_scanner.models import RankedToken
 
 
 def explain_ranked_tokens(items: list[RankedToken]) -> list[str]:

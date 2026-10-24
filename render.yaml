@@ -1,20 +1,20 @@
 # This production topology uses paid services. Deploy explicitly after reviewing the plans.
 services:
   - type: keyvalue
-    name: degenmixer-state
+    name: memorphia-state
     plan: 256mb
     ipAllowList: []
     maxmemoryPolicy: noeviction
     persistenceMode: journal-snapshot
   - type: web
-    name: axiom-ai-scanner
+    name: memorphia
     runtime: docker
     plan: 1c-2g
     healthCheckPath: /api/health
     envVars:
-      - key: AXIOM_ENV
+      - key: MEMORPHIA_ENV
         value: production
-      - key: AXIOM_PUBLIC_ORIGIN
+      - key: MEMORPHIA_PUBLIC_ORIGIN
         sync: false
       - key: SOLANA_RPC_URL
         sync: false
@@ -23,15 +23,15 @@ services:
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: degenmixer-state
+          name: memorphia-state
           property: connectionString
   - type: worker
-    name: degenmixer-worker
+    name: memorphia-worker
     runtime: docker
     plan: 1c-2g
-    dockerCommand: python -m axiom_scanner.worker
+    dockerCommand: python -m memorphia_scanner.worker
     envVars:
-      - key: AXIOM_ENV
+      - key: MEMORPHIA_ENV
         value: production
       - key: WAVESPEED_API_KEYS
         sync: false
@@ -40,5 +40,5 @@ services:
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: degenmixer-state
+          name: memorphia-state
           property: connectionString

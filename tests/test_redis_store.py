@@ -9,7 +9,7 @@ try:
 except ImportError:
     fakeredis = None
 
-from axiom_scanner.web_store import RedisStore
+from memorphia_scanner.web_store import RedisStore
 
 
 @unittest.skipUnless(

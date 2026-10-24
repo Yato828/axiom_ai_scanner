@@ -479,7 +479,7 @@ const uploadableImageTypes = new Set([
   "image/webp",
 ]);
 const defaultPrompt =
-  "Create a coherent DegenMixer sticker-style character or emblem from these two reference images. Preserve recognizable traits, colors, and shapes from both inputs. Keep the composition clean, high contrast, polished, and centered.";
+  "Create a coherent Memorphia sticker-style character or emblem from these two reference images. Preserve recognizable traits, colors, and shapes from both inputs. Keep the composition clean, high contrast, polished, and centered.";
 
 function setHybridStatus(text) {
   hybridStatusText.textContent = text;
@@ -499,7 +499,7 @@ function setHybridResultImage(url) {
   hybridResultSlot.innerHTML = "";
   const image = document.createElement("img");
   image.src = url;
-  image.alt = "Generated DegenMixer token image";
+  image.alt = "Generated Memorphia token image";
   hybridResultSlot.append(image);
   hybridResultLink.href = url;
   hybridResultLink.hidden = false;
@@ -567,10 +567,10 @@ async function submitHybrid(event) {
   setHybridStatus("Generating...");
   setHybridPendingMessage();
   try {
-    if (!window.degenMixer) throw new Error("Wallet tools are still loading. Please try again.");
-    await window.degenMixer.requireWallet();
+    if (!window.memorphia) throw new Error("Wallet tools are still loading. Please try again.");
+    await window.memorphia.requireWallet();
     const formData = await buildHybridFormData();
-    const response = await window.degenMixer.api("/api/hybrid-image", {
+    const response = await window.memorphia.api("/api/hybrid-image", {
       method: "POST", headers: { "Idempotency-Key": crypto.randomUUID() }, body: formData,
     });
     const job = await response.json();
@@ -579,13 +579,13 @@ async function submitHybrid(event) {
     while (["queued", "running"].includes(result.state) && Date.now() < deadline) {
       setHybridStatus(result.state === "queued" ? "Queued…" : "Generating…");
       await new Promise(resolve => setTimeout(resolve, 2500));
-      result = await (await window.degenMixer.api(`/api/jobs/${job.job_id}`)).json();
+      result = await (await window.memorphia.api(`/api/jobs/${job.job_id}`)).json();
     }
     if (result.state !== "completed") throw new Error(result.error || "Generation is taking longer. Check your request before starting another.");
     setHybridResultImage(result.result.output_url);
     setHybridStatus("Mix ready");
     const params = hashStudioParams();
-    window.dispatchEvent(new CustomEvent("degenmixer:mix-ready", { detail: {
+    window.dispatchEvent(new CustomEvent("memorphia:mix-ready", { detail: {
       url: result.result.output_url, name: params.get("title") || "", symbol: params.get("ticker") || "",
     } }));
   } catch (error) {
@@ -730,7 +730,7 @@ function buildProviderFriendlyPrompt(prompt, title, ticker) {
     .trim();
   const narrative = [title, ticker].filter(Boolean).join(" ").trim();
   return [
-    "Create one polished DegenMixer sticker-style character or emblem from the two reference images.",
+    "Create one polished Memorphia sticker-style character or emblem from the two reference images.",
     "Preserve recognizable colors, shapes, and visual identity from both references.",
     "Use a clean centered composition, natural lighting, crisp edges, no UI, no tiny text.",
     narrative,

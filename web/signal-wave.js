@@ -1,4 +1,4 @@
-/* Original DegenMixer artwork. Native Canvas 2D; no third-party runtime or scene. */
+/* Original Memorphia artwork. Native Canvas 2D; no third-party runtime or scene. */
 export const STILL_TIME = 8.5;
 
 export function ribbonPoint(u, strand, time, width, height, branch = 0, pointer = { x: 0, y: 0 }) {

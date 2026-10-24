@@ -1,2 +1,0 @@
-"""Axiom AI Scanner package."""
-

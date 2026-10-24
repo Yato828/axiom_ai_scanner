@@ -10,9 +10,9 @@ import threading
 import time
 from pathlib import Path
 
-from axiom_scanner.analysis.narratives import generate_narratives, load_og_memecoins
-from axiom_scanner.web_security import ApiError
-from axiom_scanner.web_store import get_store, production
+from memorphia_scanner.analysis.narratives import generate_narratives, load_og_memecoins
+from memorphia_scanner.web_security import ApiError
+from memorphia_scanner.web_store import get_store, production
 
 ROOT = Path(__file__).resolve().parent.parent
 logger = logging.getLogger(__name__)
@@ -55,9 +55,9 @@ def heartbeat_loop(stop):
 
 
 def runtime_config():
-    from axiom_scanner.config import load_config
+    from memorphia_scanner.config import load_config
 
-    configured = os.getenv("AXIOM_CONFIG_PATH", "")
+    configured = os.getenv("MEMORPHIA_CONFIG_PATH", "")
     config = load_config(Path(configured) if configured else None)
     config.chains = ["solana"]
     return config
@@ -68,7 +68,7 @@ def refresh_scan():
     if not store.set("scan:lock", lease, 180, nx=True):
         return
     try:
-        from axiom_dashboard import scan_once
+        from memorphia_dashboard import scan_once
 
         config = runtime_config()
         rows = scan_once(config, limit=200)
@@ -118,7 +118,7 @@ def scan_payload(limit):
     payload["count"] = len(payload["tokens"])
     payload["stale"] = (
         time.time() - timestamp
-        > max(int(os.getenv("AXIOM_SCAN_CACHE_SECONDS", "45")), 15) * 2
+        > max(int(os.getenv("MEMORPHIA_SCAN_CACHE_SECONDS", "45")), 15) * 2
     )
     payload["status"] = "ready"
     if store.get("scan:error"):
@@ -153,7 +153,7 @@ def enqueue_generation(kind, body, content_type, wallet, idempotency_key):
         "content_type": content_type,
         "fingerprint": fingerprint,
     }
-    if not store.enqueue(job_id, record, int(os.getenv("AXIOM_QUEUE_CAPACITY", "16"))):
+    if not store.enqueue(job_id, record, int(os.getenv("MEMORPHIA_QUEUE_CAPACITY", "16"))):
         raise ApiError(
             "The image queue is full. Please try again shortly.", "queue_full", 503
         )
@@ -202,7 +202,7 @@ def execute_job(job_id):
     try:
         body = base64.b64decode(record.pop("body"))
         if record["kind"] == "hybrid":
-            from axiom_scanner.analysis.wavespeed_hybrid import (
+            from memorphia_scanner.analysis.wavespeed_hybrid import (
                 generate_hybrid_image_request,
             )
 
@@ -210,7 +210,7 @@ def execute_job(job_id):
                 record["content_type"], body, ROOT / "web"
             )
         else:
-            from axiom_scanner.analysis.image_generation import generate_meme_image
+            from memorphia_scanner.analysis.image_generation import generate_meme_image
 
             result = generate_meme_image(
                 json.loads(body), resolve_og_image=lambda name, symbol: ""
@@ -245,7 +245,7 @@ def market_loop(stop):
             refresh_scan()
         except Exception:
             logger.exception("Market worker failed")
-        stop.wait(max(int(os.getenv("AXIOM_SCAN_CACHE_SECONDS", "45")), 15))
+        stop.wait(max(int(os.getenv("MEMORPHIA_SCAN_CACHE_SECONDS", "45")), 15))
 
 
 def ensure_local_workers():

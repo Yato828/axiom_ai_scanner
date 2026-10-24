@@ -1,4 +1,6 @@
-# Axiom Meme Lab
+# Memorphia
+
+Project ticker: `$mmorph`.
 
 CLI scanner and web dashboard for finding on-chain trends, mixing two token images,
 and launching a custom or mixed-image token on Pump.fun in Solana mainnet.
@@ -13,21 +15,19 @@ as financial advice.
 
 ## Why DexScreener first
 
-Axiom is a trading terminal, but it does not expose a stable official public API for
-all live token data. This project keeps data sources behind adapters, so the first
-version uses DexScreener public endpoints and can later be extended with Mobula or
-another provider that mirrors Axiom-like market data.
+Memorphia uses DexScreener public endpoints for live token data. Data sources stay
+behind adapters, so additional providers can be added without changing the dashboard.
 
 ## Project structure
 
 ```text
-axiom_ai_scanner/
-  axiom_dashboard.py              # CLI entry point
+memorphia/
+  memorphia_dashboard.py          # CLI entry point
   vercel.json                     # Vercel static/API routing
   config.example.json             # Example scanner settings
   .env.example                    # Optional environment variables
   api/                            # Vercel Python serverless functions
-  axiom_scanner/
+  memorphia_scanner/
     config.py                     # Config loading and defaults
     http_client.py                # Small HTTP client with retries
     models.py                     # Shared data models
@@ -71,14 +71,14 @@ npm run build
 ```
 
 ```powershell
-cd axiom_ai_scanner
-python axiom_dashboard.py scan --limit 15
+cd memorphia
+python memorphia_dashboard.py scan --limit 15
 ```
 
 Visual dashboard:
 
 ```powershell
-python axiom_dashboard.py web --port 8080 --limit 100
+python memorphia_dashboard.py web --port 8080 --limit 100
 ```
 
 Then open:
@@ -88,7 +88,7 @@ http://127.0.0.1:8080
 ```
 
 The dashboard shows token images when the market data provider returns them. It
-also includes a Meme Lab panel that blends each trend token with an OG meme coin
+also includes a studio panel that blends each trend token with an OG meme coin
 and produces:
 
 - a mixed meme name and ticker,
@@ -122,14 +122,14 @@ Set a WaveSpeed API key before starting the web server:
 
 ```powershell
 Add-Content .env "WAVESPEED_API_KEY=your-key"
-python axiom_dashboard.py web --port 8080 --limit 100
+python memorphia_dashboard.py web --port 8080 --limit 100
 ```
 
 For fallback across multiple WaveSpeed accounts, use a comma-separated list:
 
 ```powershell
 Add-Content .env "WAVESPEED_API_KEYS=first-key,second-key"
-python axiom_dashboard.py web --port 8080 --limit 100
+python memorphia_dashboard.py web --port 8080 --limit 100
 ```
 
 When multiple keys are set, Mixer Studio rotates the first key used for each
@@ -155,7 +155,7 @@ Latency notes:
 - the backend polls for the result every 1 second by default.
 
 Repeated dashboard scans are cached for 45 seconds by default. Adjust
-`AXIOM_SCAN_CACHE_SECONDS` if you need fresher data or less load.
+`MEMORPHIA_SCAN_CACHE_SECONDS` if you need fresher data or less load.
 
 ## Deploy on Vercel
 
@@ -163,8 +163,8 @@ This project can run on Vercel through the included `vercel.json` and `api/`
 Python functions. The static dashboard stays in `web/`, while `/api/*` is served
 by Vercel Functions.
 
-Vercel serves the HTTP application only. Set `AXIOM_ENV=production`,
-`AXIOM_PUBLIC_ORIGIN` and `REDIS_URL`, and run `python -m axiom_scanner.worker`
+Vercel serves the HTTP application only. Set `MEMORPHIA_ENV=production`,
+`MEMORPHIA_PUBLIC_ORIGIN` and `REDIS_URL`, and run `python -m memorphia_scanner.worker`
 as a separate persistent service connected to the same Redis. Background threads
 inside serverless requests are not used for scans or paid generation.
 
@@ -172,7 +172,7 @@ Steps:
 
 1. Push this project to GitHub.
 2. Open `https://vercel.com/new` and import the GitHub repository.
-3. Set the project root to `axiom_ai_scanner` if the repository contains more
+3. Set the project root to `memorphia` if the repository contains more
    than this folder.
 4. Use the included `npm ci && npm run build` build command for the wallet
    bundle. Install Python dependencies from `requirements.lock`.
@@ -184,7 +184,7 @@ Steps:
 CLI alternative:
 
 ```powershell
-cd C:\Users\Admin\myproject\axiom_ai_scanner
+cd C:\Users\Admin\myproject\memorphia
 vercel
 vercel --prod
 ```
@@ -226,13 +226,13 @@ Keep secrets in `.env` only. Commit `.env.example`, not `.env`.
 Watch mode:
 
 ```powershell
-python axiom_dashboard.py watch --interval 60 --limit 10
+python memorphia_dashboard.py watch --interval 60 --limit 10
 ```
 
 JSON output:
 
 ```powershell
-python axiom_dashboard.py scan --format json --limit 20
+python memorphia_dashboard.py scan --format json --limit 20
 ```
 
 Run tests:
@@ -247,7 +247,7 @@ Copy `config.example.json` to `config.json` and adjust thresholds:
 
 ```powershell
 Copy-Item config.example.json config.json
-python axiom_dashboard.py scan --config config.json
+python memorphia_dashboard.py scan --config config.json
 ```
 
 Useful fields:

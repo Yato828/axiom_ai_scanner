@@ -5,7 +5,7 @@
   if (!container || !toggle) return;
 
   const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const storageKey = 'degenmixer:background-paused';
+  const storageKey = 'memorphia:background-paused';
   let scene = null;
   let loading = null;
   let failed = false;

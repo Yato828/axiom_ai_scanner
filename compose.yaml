@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
   worker:
     build: .
-    command: ["python", "-m", "axiom_scanner.worker"]
+    command: ["python", "-m", "memorphia_scanner.worker"]
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0

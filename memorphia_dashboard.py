@@ -7,11 +7,11 @@ import sys
 import time
 from pathlib import Path
 
-from axiom_scanner.analysis.local_ai import explain_ranked_tokens
-from axiom_scanner.analysis.scoring import rank_tokens
-from axiom_scanner.config import ScannerConfig, load_config
-from axiom_scanner.reporting import render_console_report
-from axiom_scanner.sources.dexscreener import DexScreenerSource
+from memorphia_scanner.analysis.local_ai import explain_ranked_tokens
+from memorphia_scanner.analysis.scoring import rank_tokens
+from memorphia_scanner.config import ScannerConfig, load_config
+from memorphia_scanner.reporting import render_console_report
+from memorphia_scanner.sources.dexscreener import DexScreenerSource
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_ROOT = PROJECT_ROOT / "web"
@@ -164,13 +164,13 @@ def run_watch(args: argparse.Namespace) -> int:
 
 
 def run_web(args: argparse.Namespace) -> int:
-    from axiom_scanner.web_runtime import ensure_local_workers
-    from axiom_scanner.web_security import public_origin
-    from axiom_scanner.web_store import get_store
-    from axiom_scanner.webapp import BoundedHTTPServer, DashboardHandler
+    from memorphia_scanner.web_runtime import ensure_local_workers
+    from memorphia_scanner.web_security import public_origin
+    from memorphia_scanner.web_store import get_store
+    from memorphia_scanner.webapp import BoundedHTTPServer, DashboardHandler
 
     if args.config:
-        os.environ["AXIOM_CONFIG_PATH"] = str(args.config.resolve())
+        os.environ["MEMORPHIA_CONFIG_PATH"] = str(args.config.resolve())
     public_origin({"host": f"127.0.0.1:{args.port}"})
     get_store().ping()
     if not (WEB_ROOT / "dist" / "launcher.js").is_file():

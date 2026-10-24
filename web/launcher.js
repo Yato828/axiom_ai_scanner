@@ -84,7 +84,7 @@ function clearSession() {
   walletButton.textContent = 'Connect wallet';
   $('#reviewWallet').textContent = 'Not connected';
   checkButton.hidden = true;
-  window.dispatchEvent(new CustomEvent('degenmixer:wallet-change', { detail: null }));
+  window.dispatchEvent(new CustomEvent('memorphia:wallet-change', { detail: null }));
 }
 
 function updateSession(value, walletProvider) {
@@ -110,7 +110,7 @@ function updateSession(value, walletProvider) {
   walletProvider.on?.('disconnect', onDisconnected);
   disconnectListeners.push(() => walletProvider.removeListener?.('accountChanged', onChanged));
   disconnectListeners.push(() => walletProvider.removeListener?.('disconnect', onDisconnected));
-  window.dispatchEvent(new CustomEvent('degenmixer:wallet-change', { detail: value.wallet }));
+  window.dispatchEvent(new CustomEvent('memorphia:wallet-change', { detail: value.wallet }));
 }
 
 function injectedWallet(name) {
@@ -177,7 +177,7 @@ async function disconnect() {
 }
 
 function readFields() {
-  return Object.fromEntries(['name', 'symbol', 'description', 'website', 'twitter', 'telegram'].map(key => [key, form.elements.namedItem(key).value]));
+  return Object.fromEntries(['name', 'symbol', 'description', 'website', 'twitter'].map(key => [key, form.elements.namedItem(key).value]));
 }
 
 function renderPreview() {
@@ -264,7 +264,7 @@ async function reviewLaunch() {
 
 function persistPending(value) {
   // Require persistence so a refresh during RPC failure cannot silently create another mint.
-  localStorage.setItem(`degenmixer:pending:${value.wallet}`, JSON.stringify(value));
+  localStorage.setItem(`memorphia:pending:${value.wallet}`, JSON.stringify(value));
   pending = value;
   confirmButton.hidden = true;
   reviewButton.hidden = true;
@@ -313,9 +313,9 @@ async function checkStatus() {
     checkButton.hidden = true;
     $('#startNewToken').hidden = false;
     // Retain the completed transaction until the user explicitly starts a fresh draft.
-    localStorage.setItem(`degenmixer:pending:${wallet}`, JSON.stringify({ ...value, confirmed: true }));
+    localStorage.setItem(`memorphia:pending:${wallet}`, JSON.stringify({ ...value, confirmed: true }));
   } else if (state === 'expired' || state === 'failed') {
-    localStorage.removeItem(`degenmixer:pending:${wallet}`);
+    localStorage.removeItem(`memorphia:pending:${wallet}`);
     pending = null;
     checkButton.hidden = true;
     invalidate();
@@ -371,15 +371,15 @@ checkButton.addEventListener('click', async () => {
 });
 $('#saveDraft').addEventListener('click', () => {
   try {
-    localStorage.setItem('degenmixer:draft', JSON.stringify(readFields()));
+    localStorage.setItem('memorphia:draft', JSON.stringify(readFields()));
     $('#restoreDraft').hidden = false;
     status.textContent = 'Draft details saved on this device. Keep a copy of your artwork separately.';
   } catch { showError('Device storage is unavailable. Download your draft instead.'); }
 });
 $('#restoreDraft').addEventListener('click', () => {
   try {
-    const fields = JSON.parse(localStorage.getItem('degenmixer:draft'));
-    for (const key of ['name', 'symbol', 'description', 'website', 'twitter', 'telegram']) {
+    const fields = JSON.parse(localStorage.getItem('memorphia:draft'));
+    for (const key of ['name', 'symbol', 'description', 'website', 'twitter']) {
       const input = form.elements.namedItem(key);
       input.value = typeof fields[key] === 'string' ? fields[key].slice(0, input.maxLength) : '';
     }
@@ -395,7 +395,7 @@ $('#downloadDraft').addEventListener('click', () => {
 });
 $('#startNewToken').addEventListener('click', () => {
   if (busy || !session || !pending) return;
-  localStorage.removeItem(`degenmixer:pending:${session.wallet}`);
+  localStorage.removeItem(`memorphia:pending:${session.wallet}`);
   pending = null;
   form.reset();
   artwork = null;
@@ -410,12 +410,12 @@ $('#startNewToken').addEventListener('click', () => {
   setBusy(false);
   status.textContent = 'Start a new draft with your own image or a fresh mix.';
 });
-window.addEventListener('degenmixer:mix-ready', event => {
+window.addEventListener('memorphia:mix-ready', event => {
   latestMix = event.detail;
   $('#chooseMixedImage').disabled = false;
   $('#useMixForLaunch').hidden = false;
 });
-window.degenMixer = { requireWallet, api, getSession: () => session };
+window.memorphia = { requireWallet, api, getSession: () => session };
 
 try {
   const response = await api('/api/config');
@@ -425,7 +425,7 @@ try {
   if (!settings.generation_ready) {
     $('#hybridStatus').textContent = 'Image generation needs configuration';
   }
-  try { $('#restoreDraft').hidden = !localStorage.getItem('degenmixer:draft'); } catch { /* Optional draft storage. */ }
+  try { $('#restoreDraft').hidden = !localStorage.getItem('memorphia:draft'); } catch { /* Optional draft storage. */ }
 } catch {
   status.textContent = 'Launch settings could not be loaded. Reload this page to try again.';
   reviewButton.disabled = true;

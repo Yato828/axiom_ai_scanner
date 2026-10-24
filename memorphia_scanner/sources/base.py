@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from axiom_scanner.models import TokenSnapshot
+from memorphia_scanner.models import TokenSnapshot
 
 
 class TokenSource(ABC):

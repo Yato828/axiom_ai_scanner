@@ -10,7 +10,7 @@ import warnings
 from io import BytesIO
 from urllib.parse import urljoin, urlsplit
 
-from axiom_scanner.web_security import ApiError
+from memorphia_scanner.web_security import ApiError
 
 MAX_IMAGE_BYTES = 3 * 1024 * 1024
 MAX_PIXELS = 16_000_000
@@ -73,7 +73,7 @@ def download_image(url, max_bytes=MAX_IMAGE_BYTES):
             connection.request(
                 "GET",
                 parsed.path + ("?" + parsed.query if parsed.query else "") or "/",
-                headers={"User-Agent": "DegenMixer/1.0", "Accept": "image/*"},
+                headers={"User-Agent": "Memorphia/1.0", "Accept": "image/*"},
             )
             response = connection.getresponse()
             if response.status in {301, 302, 303, 307, 308}:

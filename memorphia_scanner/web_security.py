@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from http.cookies import CookieError, SimpleCookie
 from urllib.parse import urlsplit
 
-from axiom_scanner.web_store import get_store, production
+from memorphia_scanner.web_store import get_store, production
 
 
 class ApiError(Exception):
@@ -40,13 +40,13 @@ def decode_address(value):
 
 
 def public_origin(headers):
-    configured = os.getenv("AXIOM_PUBLIC_ORIGIN", "").rstrip("/")
+    configured = os.getenv("MEMORPHIA_PUBLIC_ORIGIN", "").rstrip("/")
     if configured:
         parsed = urlsplit(configured)
         if parsed.scheme != "https" and not (
             not production() and parsed.hostname in {"localhost", "127.0.0.1"}
         ):
-            raise RuntimeError("AXIOM_PUBLIC_ORIGIN must be HTTPS in production")
+            raise RuntimeError("MEMORPHIA_PUBLIC_ORIGIN must be HTTPS in production")
         if (
             parsed.path
             or parsed.query
@@ -54,10 +54,10 @@ def public_origin(headers):
             or parsed.username
             or not parsed.hostname
         ):
-            raise RuntimeError("AXIOM_PUBLIC_ORIGIN must contain only an origin")
+            raise RuntimeError("MEMORPHIA_PUBLIC_ORIGIN must contain only an origin")
         return configured
     if production():
-        raise RuntimeError("AXIOM_PUBLIC_ORIGIN is required in production")
+        raise RuntimeError("MEMORPHIA_PUBLIC_ORIGIN is required in production")
     host = headers.get("host", "127.0.0.1:8080")
     parsed = urlsplit("http://" + host)
     if (
@@ -104,7 +104,7 @@ def capacity_gate(scope, capacity, ttl=90):
 
 def client_identity(remote, headers):
     # Enable only behind a proxy that overwrites X-Forwarded-For.
-    if os.getenv("AXIOM_TRUST_PROXY") == "1":
+    if os.getenv("MEMORPHIA_TRUST_PROXY") == "1":
         candidate = headers.get("x-forwarded-for", "").split(",")[0].strip()
         try:
             return str(ipaddress.ip_address(candidate))
@@ -118,7 +118,7 @@ def create_challenge(address, origin):
     challenge_id = secrets.token_urlsafe(24)
     nonce = secrets.token_hex(16)
     message = (
-        f"DegenMixer sign in\nSite: {origin}\nWallet: {address}\n"
+        f"Memorphia sign in\nSite: {origin}\nWallet: {address}\n"
         f"Nonce: {nonce}\nExpires in: 5 minutes\n\n"
         "This proves wallet ownership. It does not authorize a transaction or transfer funds."
     )
